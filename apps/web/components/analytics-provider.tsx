@@ -68,20 +68,20 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     // Set user ID for cross-session tracking
     setUserProperties({
       user_id: userId,
-      first_visit_date: localStorage.getItem('acfs_first_visit') || new Date().toISOString(),
+      first_visit_date: safeGetItem('acfs_first_visit') || new Date().toISOString(),
     });
 
     // Store first visit date
-    if (!localStorage.getItem('acfs_first_visit')) {
-      localStorage.setItem('acfs_first_visit', new Date().toISOString());
+    if (!safeGetItem('acfs_first_visit')) {
+      safeSetItem('acfs_first_visit', new Date().toISOString());
     }
 
     // Track enhanced session start
     trackSessionStart();
 
     // Track returning vs new user
-    const visitCount = parseInt(localStorage.getItem('acfs_visit_count') || '0', 10) + 1;
-    localStorage.setItem('acfs_visit_count', visitCount.toString());
+    const visitCount = parseInt(safeGetItem('acfs_visit_count') || '0', 10) + 1;
+    safeSetItem('acfs_visit_count', visitCount.toString());
 
     setUserProperties({
       visit_count: visitCount,
