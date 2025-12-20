@@ -415,7 +415,7 @@ function PlaceholderPanel() {
         <p className="text-sm text-muted-foreground">Click a tool to see its connections and features</p>
       </div>
       <div className="rounded-xl bg-muted/30 p-4 border border-border/30">
-        <p className="text-xs leading-relaxed text-muted-foreground">{flywheelDescription.description}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">{flywheelDescription.description}</p>
       </div>
     </div>
   );

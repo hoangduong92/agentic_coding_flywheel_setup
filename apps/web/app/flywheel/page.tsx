@@ -188,7 +188,7 @@ function WorkflowCard({ scenario, index }: { scenario: WorkflowScenario; index: 
             <h3 className="text-lg font-bold text-foreground">{scenario.title}</h3>
             <p className="mt-1 text-sm text-muted-foreground">{scenario.description}</p>
           </div>
-          <div className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+          <div className="shrink-0 rounded-lg bg-primary/10 px-2.5 py-1 text-[12px] font-semibold text-primary">
             {scenario.timeframe}
           </div>
         </div>
@@ -324,7 +324,7 @@ function PromptCard({ prompt, index }: { prompt: AgentPrompt; index: number }) {
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <div
-              className={`mb-2 inline-flex rounded-full bg-gradient-to-r ${categoryColors[prompt.category]} px-2.5 py-0.5 text-[10px] font-semibold text-white`}
+              className={`mb-2 inline-flex rounded-full bg-gradient-to-r ${categoryColors[prompt.category]} px-2.5 py-1 text-[12px] font-semibold text-white`}
             >
               {prompt.category.charAt(0).toUpperCase() + prompt.category.slice(1)}
             </div>
@@ -340,26 +340,26 @@ function PromptCard({ prompt, index }: { prompt: AgentPrompt; index: number }) {
         </div>
 
         {/* Prompt text */}
-        <div className="rounded-xl bg-muted/30 p-3 font-mono text-xs leading-relaxed text-muted-foreground">
+        <div className="rounded-xl bg-muted/30 p-3 font-mono text-[12px] leading-relaxed text-muted-foreground">
           <p className="line-clamp-3">{prompt.prompt}</p>
         </div>
 
         {/* When to use */}
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-3 text-[12px] text-muted-foreground">
           <span className="font-medium text-foreground">When: </span>
           {prompt.whenToUse}
         </p>
 
         {/* Best with tools */}
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] text-muted-foreground">Best with:</span>
+          <span className="text-[12px] text-muted-foreground">Best with:</span>
           {prompt.bestWith.map((toolId) => {
             const tool = flywheelTools.find((t) => t.id === toolId);
             if (!tool) return null;
             return (
               <span
                 key={toolId}
-                className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground"
+                className="rounded-full bg-muted px-2 py-0.5 text-[12px] font-medium text-foreground"
               >
                 {tool.shortName}
               </span>
@@ -464,7 +464,7 @@ function SynergySection() {
 
               {/* Example */}
               <div className="mt-4 rounded-xl bg-muted/30 p-3">
-                <p className="text-xs text-foreground italic">&ldquo;{synergy.example}&rdquo;</p>
+                <p className="text-[12px] text-foreground italic">&ldquo;{synergy.example}&rdquo;</p>
               </div>
             </div>
           ))}
@@ -510,7 +510,7 @@ function ToolCard({ tool, index }: { tool: FlywheelTool; index: number }) {
             </div>
             <div>
               <h3 className="font-bold text-foreground">{tool.name}</h3>
-              <p className="text-xs text-muted-foreground">{tool.tagline}</p>
+              <p className="text-[12px] text-muted-foreground">{tool.tagline}</p>
             </div>
           </div>
           {tool.stars && (
@@ -523,7 +523,7 @@ function ToolCard({ tool, index }: { tool: FlywheelTool; index: number }) {
 
         {/* Language badge */}
         <div className="mb-3">
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="rounded-full bg-muted px-2 py-0.5 text-[12px] font-medium text-muted-foreground">
             {tool.language}
           </span>
         </div>
@@ -534,7 +534,7 @@ function ToolCard({ tool, index }: { tool: FlywheelTool; index: number }) {
         {/* Features */}
         <ul className="mb-3 space-y-1">
           {tool.features.slice(0, 2).map((feature, i) => (
-            <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+            <li key={i} className="flex items-start gap-2 text-[12px] text-muted-foreground">
               <Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
               <span className="line-clamp-1">{feature}</span>
             </li>
