@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { CommandCard } from "@/components/command-card";
 import { AlertCard, OutputPreview, DetailsSection } from "@/components/alert-card";
 import { markStepComplete } from "@/lib/wizardSteps";
+import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 import {
   SimplerGuide,
   GuideSection,
@@ -55,11 +56,19 @@ export default function RunInstallerPage() {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
 
+  // Analytics tracking for this wizard step
+  const { markComplete } = useWizardAnalytics({
+    step: "run_installer",
+    stepNumber: 7,
+    stepTitle: "Run Installer",
+  });
+
   const handleContinue = useCallback(() => {
+    markComplete();
     markStepComplete(7);
     setIsNavigating(true);
     router.push("/wizard/reconnect-ubuntu");
-  }, [router]);
+  }, [router, markComplete]);
 
   return (
     <div className="space-y-8">
