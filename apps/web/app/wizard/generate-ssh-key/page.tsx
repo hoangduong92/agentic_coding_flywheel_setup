@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Key, Sparkles, AlertCircle } from "lucide-react";
+import { Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { CommandCard } from "@/components/command-card";
 import { AlertCard, DetailsSection } from "@/components/alert-card";
 import { markStepComplete } from "@/lib/wizardSteps";

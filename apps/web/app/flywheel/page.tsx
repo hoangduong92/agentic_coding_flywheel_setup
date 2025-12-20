@@ -36,7 +36,6 @@ import { Button } from "@/components/ui/button";
 import FlywheelVisualization from "@/components/flywheel-visualization";
 import {
   flywheelTools,
-  flywheelDescription,
   workflowScenarios,
   agentPrompts,
   synergyExplanations,

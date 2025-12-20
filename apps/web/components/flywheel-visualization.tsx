@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import Link from "next/link";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   LayoutGrid,
   ShieldCheck,
