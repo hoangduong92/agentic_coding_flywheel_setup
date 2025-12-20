@@ -4,71 +4,65 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink, Terminal, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { CommandCard } from "@/components/command-card";
+import { AlertCard } from "@/components/alert-card";
+import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useUserOS, useMounted } from "@/lib/userPreferences";
+
+interface TerminalCardProps {
+  name: string;
+  description: string;
+  href: string;
+}
+
+function TerminalCard({ name, description, href }: TerminalCardProps) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "group relative flex items-center justify-between rounded-xl border p-4 transition-all duration-200",
+        "border-border/50 bg-card/50 hover:border-primary/30 hover:bg-card/80 hover:shadow-md"
+      )}
+    >
+      <div>
+        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{name}</h3>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+    </a>
+  );
+}
 
 function MacContent() {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
         <p className="text-muted-foreground">
-          Install <strong>Ghostty</strong> or <strong>WezTerm</strong> — either
+          Install <strong className="text-foreground">Ghostty</strong> or <strong className="text-foreground">WezTerm</strong> — either
           is a great choice. Open it once after installing to make sure it works.
         </p>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Card className="p-4">
-            <a
-              href="https://ghostty.org/download"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between"
-            >
-              <div>
-                <h3 className="font-semibold">Ghostty</h3>
-                <p className="text-sm text-muted-foreground">
-                  Fast, native terminal
-                </p>
-              </div>
-              <ExternalLink className="h-4 w-4 text-muted-foreground" />
-            </a>
-          </Card>
-
-          <Card className="p-4">
-            <a
-              href="https://wezfurlong.org/wezterm/installation.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between"
-            >
-              <div>
-                <h3 className="font-semibold">WezTerm</h3>
-                <p className="text-sm text-muted-foreground">
-                  GPU-accelerated terminal
-                </p>
-              </div>
-              <ExternalLink className="h-4 w-4 text-muted-foreground" />
-            </a>
-          </Card>
+          <TerminalCard
+            name="Ghostty"
+            description="Fast, native terminal"
+            href="https://ghostty.org/download"
+          />
+          <TerminalCard
+            name="WezTerm"
+            description="GPU-accelerated terminal"
+            href="https://wezfurlong.org/wezterm/installation.html"
+          />
         </div>
       </div>
 
-      <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
-        <div className="flex items-start gap-3">
-          <Check className="mt-0.5 h-5 w-5 text-green-600 dark:text-green-400" />
-          <div>
-            <p className="font-medium text-green-800 dark:text-green-200">
-              SSH is already installed
-            </p>
-            <p className="text-sm text-green-700 dark:text-green-300">
-              macOS includes SSH by default, so you&apos;re ready to connect to
-              your VPS.
-            </p>
-          </div>
-        </div>
-      </div>
+      <AlertCard variant="success" icon={Check} title="SSH is already installed">
+        macOS includes SSH by default, so you&apos;re ready to connect to
+        your VPS.
+      </AlertCard>
     </div>
   );
 }
@@ -78,24 +72,15 @@ function WindowsContent() {
     <div className="space-y-6">
       <div className="space-y-4">
         <p className="text-muted-foreground">
-          Install <strong>Windows Terminal</strong> from the Microsoft Store.
+          Install <strong className="text-foreground">Windows Terminal</strong> from the Microsoft Store.
           Open it once after installing.
         </p>
 
-        <Card className="p-4">
-          <a
-            href="ms-windows-store://pdp/?ProductId=9N0DX20HK701"
-            className="flex items-center justify-between"
-          >
-            <div>
-              <h3 className="font-semibold">Windows Terminal</h3>
-              <p className="text-sm text-muted-foreground">
-                Microsoft Store (free)
-              </p>
-            </div>
-            <ExternalLink className="h-4 w-4 text-muted-foreground" />
-          </a>
-        </Card>
+        <TerminalCard
+          name="Windows Terminal"
+          description="Microsoft Store (free)"
+          href="ms-windows-store://pdp/?ProductId=9N0DX20HK701"
+        />
       </div>
 
       <div className="space-y-3">
@@ -104,7 +89,7 @@ function WindowsContent() {
           Open Windows Terminal and run this command. You should see a version
           number.
         </p>
-<CommandCard
+        <CommandCard
           command="ssh -V"
           description="Check SSH version"
           showCheckbox
@@ -147,10 +132,20 @@ export default function InstallTerminalPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Install a terminal you&apos;ll actually like
-        </h1>
-        <p className="text-lg text-muted-foreground">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20">
+            <Terminal className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:text-3xl">
+              Install a terminal you&apos;ll love
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              ~2 min
+            </p>
+          </div>
+        </div>
+        <p className="text-muted-foreground">
           A good terminal makes everything easier.
         </p>
       </div>
