@@ -604,6 +604,9 @@ state_validate() {
             return 4
         fi
 
+        # v2 is acceptable (will be auto-upgraded to v3 on next write)
+        # v3 is current
+
         # Case 3: Check required fields for v2
         local has_version has_mode has_completed
         has_version=$(echo "$content" | jq -r 'has("version")')
@@ -840,8 +843,8 @@ state_check_version() {
             echo "Detected legacy state.json (v1). A fresh install is recommended." >&2
             return 2  # Special return code for "needs migration decision"
             ;;
-        2)
-            return 0  # Current version
+        2|3)
+            return 0  # Current versions (v2 is compatible with v3)
             ;;
         *)
             echo "Unknown state.json schema version: $version" >&2
@@ -1713,16 +1716,18 @@ state_upgrade_get_progress() {
         return 1
     }
 
-    echo "$state" | jq '{
-        enabled: .ubuntu_upgrade.enabled // false,
-        stage: .ubuntu_upgrade.current_stage // "not_started",
-        original: .ubuntu_upgrade.original_version // null,
-        target: .ubuntu_upgrade.target_version // null,
-        completed_count: (.ubuntu_upgrade.completed_upgrades | length),
-        total_count: (.ubuntu_upgrade.upgrade_path | length),
-        needs_reboot: .ubuntu_upgrade.needs_reboot // false,
-        last_error: .ubuntu_upgrade.last_error // null
-    }'
+    echo "$state" | jq '
+        {
+            enabled: (.ubuntu_upgrade.enabled // false),
+            stage: (.ubuntu_upgrade.current_stage // "not_started"),
+            original: (.ubuntu_upgrade.original_version // null),
+            target: (.ubuntu_upgrade.target_version // null),
+            completed_count: ((.ubuntu_upgrade.completed_upgrades // []) | length),
+            total_count: ((.ubuntu_upgrade.upgrade_path // []) | length),
+            needs_reboot: (.ubuntu_upgrade.needs_reboot // false),
+            last_error: (.ubuntu_upgrade.last_error // null)
+        }
+    '
 }
 
 # Print upgrade status for user display

@@ -5,11 +5,12 @@
 # Installs Claude Code, Codex CLI, and Gemini CLI
 # ============================================================
 
+AGENTS_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Ensure we have logging functions available
 if [[ -z "${ACFS_BLUE:-}" ]]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     # shellcheck source=logging.sh
-    source "$SCRIPT_DIR/logging.sh"
+    source "$AGENTS_SCRIPT_DIR/logging.sh"
 fi
 
 # ============================================================
@@ -108,14 +109,14 @@ install_claude_code() {
     log_detail "Installing Claude Code (native) for $target_user..."
 
     # Try to use security.sh for verification
-    if [[ -f "$SCRIPT_DIR/security.sh" ]]; then
+    if [[ -f "$AGENTS_SCRIPT_DIR/security.sh" ]]; then
         # shellcheck source=security.sh
-        source "$SCRIPT_DIR/security.sh"
+        source "$AGENTS_SCRIPT_DIR/security.sh"
         if load_checksums; then
             local url="${KNOWN_INSTALLERS[claude]}"
             local sha="${LOADED_CHECKSUMS[claude]}"
             if [[ -n "$url" && -n "$sha" ]]; then
-                if _agent_run_as_user "source '$SCRIPT_DIR/security.sh'; verify_checksum '$url' '$sha' 'claude' | bash"; then
+                if _agent_run_as_user "source '$AGENTS_SCRIPT_DIR/security.sh'; verify_checksum '$url' '$sha' 'claude' | bash"; then
                     log_success "Claude Code installed (verified)"
                     return 0
                 fi
