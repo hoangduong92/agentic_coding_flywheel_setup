@@ -647,9 +647,9 @@ update_uv() {
 
     run_cmd "uv self-update" "$uv_bin" self update
 
-    # Capture version after and log if changed
+    # Show version change without double-counting
     if capture_version_after "uv"; then
-        log_item "ok" "uv updated" "${VERSION_BEFORE[uv]} → ${VERSION_AFTER[uv]}"
+        [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}${VERSION_BEFORE[uv]} → ${VERSION_AFTER[uv]}${NC}"
     fi
 }
 
@@ -779,8 +779,9 @@ update_omz() {
         fi
     fi
 
+    # Show version change without double-counting
     if capture_version_after "omz"; then
-        log_item "ok" "Oh-My-Zsh updated" "${VERSION_BEFORE[omz]} → ${VERSION_AFTER[omz]}"
+        [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}${VERSION_BEFORE[omz]} → ${VERSION_AFTER[omz]}${NC}"
     fi
 }
 
@@ -908,8 +909,9 @@ update_atuin() {
         fi
     fi
 
+    # Show version change without double-counting
     if capture_version_after "atuin"; then
-        log_item "ok" "Atuin updated" "${VERSION_BEFORE[atuin]} → ${VERSION_AFTER[atuin]}"
+        [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}${VERSION_BEFORE[atuin]} → ${VERSION_AFTER[atuin]}${NC}"
     fi
 }
 
