@@ -63,9 +63,13 @@ Follow the browser link to authenticate with your Anthropic account.
 
 ### Codex CLI
 ```bash
-codex auth
+codex login
 ```
-Follow the prompts to authenticate with your OpenAI account.
+Follow the browser prompts to authenticate with your **ChatGPT Pro/Plus account**.
+
+> **Important:** Codex CLI uses your ChatGPT subscription (Pro/Plus), NOT an API account.
+> If you have an OpenAI API key (OPENAI_API_KEY), that's for the OpenAI API—different from Codex CLI.
+> If login fails, check Settings → Security → "API/Device access" in ChatGPT.
 
 ### Gemini CLI
 ```bash
