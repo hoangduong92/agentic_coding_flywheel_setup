@@ -6,7 +6,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState } from "react";
 import { safeGetItem, safeSetItem } from "./utils";
 
 export type OperatingSystem = "mac" | "windows";
