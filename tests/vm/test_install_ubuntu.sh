@@ -99,6 +99,7 @@ run_one() {
       bash install.sh --yes --mode vibe
 
       su - ubuntu -c "zsh -ic '\''acfs doctor'\''"
+      su - ubuntu -c "zsh -ic '\''test -f ~/.acfs/VERSION'\''"
       su - ubuntu -c "zsh -ic '\''onboard --help >/dev/null'\''"
       su - ubuntu -c "zsh -ic '\''ntm --help >/dev/null'\''"
       su - ubuntu -c "zsh -ic '\''gh --version >/dev/null'\''"

@@ -10,6 +10,10 @@ ACFS_VERSION="${ACFS_VERSION:-0.1.0}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+if [[ -f "$SCRIPT_DIR/../../VERSION" ]]; then
+    ACFS_VERSION="$(cat "$SCRIPT_DIR/../../VERSION" 2>/dev/null || echo "$ACFS_VERSION")"
+fi
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'

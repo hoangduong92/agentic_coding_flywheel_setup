@@ -44,6 +44,16 @@ fi
 
 # Source gum_ui library if available
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Prefer the installed VERSION file when available.
+if [[ -f "$HOME/.acfs/VERSION" ]]; then
+    ACFS_VERSION="$(cat "$HOME/.acfs/VERSION" 2>/dev/null || echo "$ACFS_VERSION")"
+elif [[ -f "$SCRIPT_DIR/../VERSION" ]]; then
+    ACFS_VERSION="$(cat "$SCRIPT_DIR/../VERSION" 2>/dev/null || echo "$ACFS_VERSION")"
+elif [[ -f "$SCRIPT_DIR/../../VERSION" ]]; then
+    ACFS_VERSION="$(cat "$SCRIPT_DIR/../../VERSION" 2>/dev/null || echo "$ACFS_VERSION")"
+fi
+
 if [[ -f "$SCRIPT_DIR/gum_ui.sh" ]]; then
     source "$SCRIPT_DIR/gum_ui.sh"
 elif [[ -f "$HOME/.acfs/scripts/lib/gum_ui.sh" ]]; then
@@ -74,6 +84,20 @@ FAIL_COUNT=0
 # JSON output mode
 JSON_MODE=false
 JSON_CHECKS=()
+
+# Print `acfs` CLI help (only used when this script is installed as the `acfs` entrypoint).
+print_acfs_help() {
+    echo "ACFS - Agentic Coding Flywheel Setup"
+    echo ""
+    echo "Usage: acfs <command> [options]"
+    echo ""
+    echo "Commands:"
+    echo "  doctor [--json]     Check system health and tool status"
+    echo "  update [options]    Update ACFS tools to latest versions"
+    echo "  services-setup      Configure AI agents and cloud services"
+    echo "  version             Show ACFS version"
+    echo "  help                Show this help message"
+}
 
 # Print a section header only in human output mode.
 section() {
@@ -483,6 +507,80 @@ EOF
 
 # Main
 main() {
+    local invoked_as
+    invoked_as="$(basename "${0:-acfs}")"
+
+    # If installed as `acfs`, support subcommands (doctor/update/services-setup/version).
+    local subcmd="${1:-}"
+    case "$subcmd" in
+        doctor|check)
+            shift
+            ;;
+        update)
+            shift
+            local update_script=""
+            if [[ -f "$HOME/.acfs/scripts/lib/update.sh" ]]; then
+                update_script="$HOME/.acfs/scripts/lib/update.sh"
+            elif [[ -f "$SCRIPT_DIR/update.sh" ]]; then
+                update_script="$SCRIPT_DIR/update.sh"
+            elif [[ -f "$SCRIPT_DIR/../scripts/lib/update.sh" ]]; then
+                update_script="$SCRIPT_DIR/../scripts/lib/update.sh"
+            fi
+
+            if [[ -n "$update_script" ]]; then
+                exec bash "$update_script" "$@"
+            fi
+
+            echo "Error: update.sh not found" >&2
+            return 1
+            ;;
+        services-setup|services|setup)
+            shift
+            local services_script=""
+            if [[ -f "$HOME/.acfs/scripts/services-setup.sh" ]]; then
+                services_script="$HOME/.acfs/scripts/services-setup.sh"
+            elif [[ -f "$SCRIPT_DIR/../services-setup.sh" ]]; then
+                services_script="$SCRIPT_DIR/../services-setup.sh"
+            elif [[ -f "$SCRIPT_DIR/../scripts/services-setup.sh" ]]; then
+                services_script="$SCRIPT_DIR/../scripts/services-setup.sh"
+            fi
+
+            if [[ -n "$services_script" ]]; then
+                exec bash "$services_script" "$@"
+            fi
+
+            echo "Error: services-setup.sh not found" >&2
+            return 1
+            ;;
+        version|-v|--version)
+            local version_file=""
+            if [[ -f "$HOME/.acfs/VERSION" ]]; then
+                version_file="$HOME/.acfs/VERSION"
+            elif [[ -f "$SCRIPT_DIR/../VERSION" ]]; then
+                version_file="$SCRIPT_DIR/../VERSION"
+            elif [[ -f "$SCRIPT_DIR/../../VERSION" ]]; then
+                version_file="$SCRIPT_DIR/../../VERSION"
+            fi
+
+            if [[ -n "$version_file" ]]; then
+                cat "$version_file"
+            else
+                echo "${ACFS_VERSION:-unknown}"
+            fi
+            return 0
+            ;;
+        help|-h)
+            print_acfs_help
+            return 0
+            ;;
+        "")
+            if [[ "$invoked_as" == "acfs" ]]; then
+                print_acfs_help
+                return 0
+            fi
+            ;;
+    esac
+
     # Parse args
     while [[ $# -gt 0 ]]; do
         case $1 in

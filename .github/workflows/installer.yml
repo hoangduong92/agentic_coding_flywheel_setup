@@ -65,6 +65,7 @@ jobs:
 
       - name: Verify key tools
         run: |
+          su - ubuntu -c "zsh -ic 'test -f ~/.acfs/VERSION'"
           su - ubuntu -c "zsh -ic 'gh --version'"
           su - ubuntu -c "zsh -ic 'jq --version'"
           su - ubuntu -c "zsh -ic 'sg --version'"
