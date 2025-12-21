@@ -417,6 +417,17 @@ acfs_curl() {
     curl "${ACFS_CURL_BASE_ARGS[@]}" "$@"
 }
 
+# Automatic retry for transient network errors (fast total budget).
+ACFS_CURL_RETRY_DELAYS=(0 5 15)
+
+acfs_is_retryable_curl_exit_code() {
+    local exit_code="${1:-0}"
+    case "$exit_code" in
+        6|7|28|35|52|56) return 0 ;; # DNS/connect/timeout/SSL/empty reply/recv error
+        *) return 1 ;;
+    esac
+}
+
 install_asset() {
     local rel_path="$1"
     local dest_path="$2"
@@ -512,20 +523,42 @@ acfs_fetch_url_content() {
     fi
 
     local sentinel="__ACFS_EOF_SENTINEL__"
-    local content
-    content="$(
-        acfs_curl "$url" 2>/dev/null || exit 1
-        printf '%s' "$sentinel"
-    )" || {
-        log_error "Failed to fetch upstream URL: $url"
-        return 1
-    }
+    local max_attempts="${#ACFS_CURL_RETRY_DELAYS[@]}"
+    local retries=$((max_attempts - 1))
 
-    if [[ "$content" != *"$sentinel" ]]; then
-        log_error "Failed to fetch upstream URL: $url"
-        return 1
-    fi
-    printf '%s' "${content%"$sentinel"}"
+    local attempt delay
+    for ((attempt=0; attempt<max_attempts; attempt++)); do
+        delay="${ACFS_CURL_RETRY_DELAYS[$attempt]}"
+        if (( attempt > 0 )); then
+            log_info "Retry ${attempt}/${retries} for fetching upstream URL (waiting ${delay}s)..."
+            sleep "$delay"
+        fi
+
+        local content status
+        content="$(
+            acfs_curl "$url" 2>/dev/null
+            status=$?
+            if (( status != 0 )); then
+                exit "$status"
+            fi
+            printf '%s' "$sentinel"
+        )"
+        status=$?
+
+        if (( status == 0 )) && [[ "$content" == *"$sentinel" ]]; then
+            (( attempt > 0 )) && log_info "Succeeded on retry ${attempt} for fetching upstream URL"
+            printf '%s' "${content%"$sentinel"}"
+            return 0
+        fi
+
+        if ! acfs_is_retryable_curl_exit_code "$status"; then
+            log_error "Failed to fetch upstream URL: $url"
+            return 1
+        fi
+    done
+
+    log_error "Failed to fetch upstream URL after ${max_attempts} attempts: $url"
+    return 1
 }
 
 acfs_load_upstream_checksums() {
@@ -537,7 +570,7 @@ acfs_load_upstream_checksums() {
     if [[ -r "$SCRIPT_DIR/checksums.yaml" ]]; then
         content="$(cat "$SCRIPT_DIR/checksums.yaml")"
     else
-        content="$(acfs_curl "$ACFS_RAW/checksums.yaml" 2>/dev/null)" || {
+        content="$(acfs_fetch_url_content "$ACFS_RAW/checksums.yaml")" || {
             log_error "Failed to fetch checksums.yaml from $ACFS_RAW"
             return 1
         }
@@ -1181,17 +1214,15 @@ install_cloud_db() {
         log_detail "Vault already installed ($(vault --version 2>/dev/null | head -1 || echo 'vault'))"
     else
         log_detail "Installing Vault (HashiCorp repo, codename=$codename)"
-        $SUDO mkdir -p /etc/apt/keyrings
+        try_step "Creating apt keyrings for Vault" $SUDO mkdir -p /etc/apt/keyrings || true
 
-        if ! acfs_curl https://apt.releases.hashicorp.com/gpg | \
-            $SUDO gpg --dearmor -o /etc/apt/keyrings/hashicorp.gpg 2>/dev/null; then
+        if ! try_step_eval "Adding HashiCorp apt key" "acfs_curl https://apt.releases.hashicorp.com/gpg | $SUDO gpg --dearmor -o /etc/apt/keyrings/hashicorp.gpg 2>/dev/null"; then
             log_warn "Vault: failed to install signing key (skipping)"
         else
-            echo "deb [signed-by=/etc/apt/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com ${codename} main" | \
-                $SUDO tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
+            try_step_eval "Adding HashiCorp apt repo" "echo 'deb [signed-by=/etc/apt/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com ${codename} main' | $SUDO tee /etc/apt/sources.list.d/hashicorp.list > /dev/null" || true
 
-            $SUDO apt-get update -y >/dev/null 2>&1 || log_warn "Vault: apt-get update failed (continuing)"
-            if $SUDO apt-get install -y vault >/dev/null 2>&1; then
+            try_step "Updating apt cache for Vault" $SUDO apt-get update -y || log_warn "Vault: apt-get update failed (continuing)"
+            if try_step "Installing Vault" $SUDO apt-get install -y vault; then
                 log_success "Vault installed"
             else
                 log_warn "Vault: installation failed (optional)"
@@ -1215,7 +1246,7 @@ install_cloud_db() {
                 fi
 
                 log_detail "Installing $cli via bun"
-                if run_as_target "$bun_bin" install -g "${cli}@latest"; then
+                if try_step "Installing $cli via bun" run_as_target "$bun_bin" install -g "${cli}@latest"; then
                     if [[ -x "$TARGET_HOME/.bun/bin/$cli" ]]; then
                         log_success "$cli installed"
                     else
