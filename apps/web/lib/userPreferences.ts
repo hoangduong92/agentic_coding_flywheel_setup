@@ -13,6 +13,33 @@ export type OperatingSystem = "mac" | "windows";
 
 const OS_KEY = "acfs-user-os";
 const VPS_IP_KEY = "acfs-vps-ip";
+const OS_QUERY_KEY = "os";
+const VPS_IP_QUERY_KEY = "ip";
+
+function getQueryParam(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return new URLSearchParams(window.location.search).get(key);
+  } catch {
+    return null;
+  }
+}
+
+function setQueryParam(key: string, value: string | null): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const url = new URL(window.location.href);
+    if (value === null || value === "") {
+      url.searchParams.delete(key);
+    } else {
+      url.searchParams.set(key, value);
+    }
+    window.history.replaceState(window.history.state, "", url.toString());
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Query keys for TanStack Query
 export const userPreferencesKeys = {
@@ -29,14 +56,20 @@ export function getUserOS(): OperatingSystem | null {
   if (stored === "mac" || stored === "windows") {
     return stored;
   }
+  const fromQuery = getQueryParam(OS_QUERY_KEY);
+  if (fromQuery === "mac" || fromQuery === "windows") {
+    return fromQuery;
+  }
   return null;
 }
 
 /**
  * Save the user's operating system selection to localStorage.
  */
-export function setUserOS(os: OperatingSystem): void {
-  safeSetItem(OS_KEY, os);
+export function setUserOS(os: OperatingSystem): boolean {
+  const storedOk = safeSetItem(OS_KEY, os);
+  const urlOk = setQueryParam(OS_QUERY_KEY, os);
+  return storedOk || urlOk;
 }
 
 /**
@@ -65,7 +98,17 @@ export function detectOS(): OperatingSystem | null {
  * Get the user's VPS IP address from localStorage.
  */
 export function getVPSIP(): string | null {
-  return safeGetItem(VPS_IP_KEY);
+  const stored = safeGetItem(VPS_IP_KEY);
+  if (stored && isValidIP(stored)) {
+    return stored.trim();
+  }
+
+  const fromQuery = getQueryParam(VPS_IP_QUERY_KEY);
+  if (fromQuery && isValidIP(fromQuery)) {
+    return fromQuery.trim();
+  }
+
+  return null;
 }
 
 /**
@@ -78,7 +121,9 @@ export function setVPSIP(ip: string): boolean {
   if (!isValidIP(normalized)) {
     return false;
   }
-  return safeSetItem(VPS_IP_KEY, normalized);
+  const storedOk = safeSetItem(VPS_IP_KEY, normalized);
+  const urlOk = setQueryParam(VPS_IP_QUERY_KEY, normalized);
+  return storedOk || urlOk;
 }
 
 /**
