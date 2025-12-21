@@ -782,7 +782,8 @@ state_backup_and_remove() {
     state_file="$(state_get_file)"
 
     if [[ -f "$state_file" ]]; then
-        local backup_file="${state_file}.backup.$(date +%Y%m%d_%H%M%S)"
+        local backup_file
+        backup_file="${state_file}.backup.$(date +%Y%m%d_%H%M%S)"
         cp "$state_file" "$backup_file" 2>/dev/null || true
         echo "Backed up state to: $backup_file"
         rm -f "$state_file"
@@ -861,20 +862,6 @@ state_migrate_v1_to_v2() {
     if ! state=$(state_load); then
         return 1
     fi
-
-    # Map old numeric phases to new IDs
-    # v1 stored: "completed_phases": [1, 2, 3, 4, 5, 6, 7, 8, 9]
-    local -A phase_number_to_id=(
-        [1]="user_setup"
-        [2]="filesystem"
-        [3]="shell_setup"
-        [4]="cli_tools"
-        [5]="languages"
-        [6]="agents"
-        [7]="cloud_db"
-        [8]="stack"
-        [9]="finalize"
-    )
 
     if command -v jq &>/dev/null; then
         # Convert numeric array to string array
@@ -1119,8 +1106,7 @@ init_installation_state() {
 
     # Check for existing state
     if [[ -f "$state_file" ]]; then
-        local version_check
-        version_check=$(state_check_version)
+        state_check_version
         local check_result=$?
 
         case $check_result in
@@ -1694,7 +1680,7 @@ state_upgrade_get_next_version() {
     local state
     state=$(state_load) || return 1
 
-    local completed_count path
+    local completed_count
     completed_count=$(echo "$state" | jq -r '.ubuntu_upgrade.completed_upgrades | length')
 
     # Get the next item in upgrade_path based on completed count
