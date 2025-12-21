@@ -1407,6 +1407,12 @@ finalize() {
     try_step "Installing doctor.sh" install_asset "scripts/lib/doctor.sh" "$ACFS_HOME/scripts/lib/doctor.sh" || return 1
     try_step "Installing update.sh" install_asset "scripts/lib/update.sh" "$ACFS_HOME/scripts/lib/update.sh" || return 1
 
+    # Install acfs-update wrapper command
+    try_step "Installing acfs-update" install_asset "scripts/acfs-update" "$ACFS_HOME/bin/acfs-update" || return 1
+    try_step "Setting acfs-update permissions" $SUDO chmod 755 "$ACFS_HOME/bin/acfs-update" || return 1
+    try_step "Setting acfs-update ownership" $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/bin/acfs-update" || return 1
+    try_step "Linking acfs-update command" run_as_target ln -sf "$ACFS_HOME/bin/acfs-update" "$TARGET_HOME/.local/bin/acfs-update" || return 1
+
     # Install services-setup wizard
     try_step "Installing services-setup.sh" install_asset "scripts/services-setup.sh" "$ACFS_HOME/scripts/services-setup.sh" || return 1
     try_step "Setting scripts permissions" $SUDO chmod 755 "$ACFS_HOME/scripts/services-setup.sh" || return 1
