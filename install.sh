@@ -74,6 +74,46 @@ if command -v gum &>/dev/null; then
     HAS_GUM=true
 fi
 
+# ============================================================
+# Source context tracking library for try_step() wrapper
+# ============================================================
+_source_context_lib() {
+    # Already loaded?
+    if [[ -n "${ACFS_CONTEXT_LOADED:-}" ]]; then
+        return 0
+    fi
+
+    # Try local file first (when running from repo)
+    if [[ -n "${SCRIPT_DIR:-}" ]] && [[ -f "$SCRIPT_DIR/scripts/lib/context.sh" ]]; then
+        # shellcheck source=scripts/lib/context.sh
+        source "$SCRIPT_DIR/scripts/lib/context.sh"
+        return 0
+    fi
+
+    # Try relative path (when running from repo root)
+    if [[ -f "./scripts/lib/context.sh" ]]; then
+        source "./scripts/lib/context.sh"
+        return 0
+    fi
+
+    # Download for curl|bash scenario (if curl available)
+    if command -v curl &>/dev/null; then
+        local tmp_context="/tmp/acfs-context-$$.sh"
+        if curl -fsSL "$ACFS_RAW/scripts/lib/context.sh" -o "$tmp_context" 2>/dev/null; then
+            source "$tmp_context"
+            rm -f "$tmp_context"
+            return 0
+        fi
+    fi
+
+    # Fallback: define minimal no-op stubs so install.sh still works
+    set_phase() { :; }
+    try_step() { shift; "$@"; }
+    try_step_eval() { shift; bash -c "$1"; }
+    return 0
+}
+_source_context_lib
+
 # ACFS Color scheme (Catppuccin Mocha inspired)
 ACFS_PRIMARY="#89b4fa"
 ACFS_SUCCESS="#a6e3a1"
@@ -678,6 +718,7 @@ ensure_ubuntu() {
 }
 
 ensure_base_deps() {
+    set_phase "base_deps" "Base Dependencies" 1
     log_step "1/10" "Checking base dependencies..."
 
     if [[ "$DRY_RUN" == "true" ]]; then
@@ -692,30 +733,32 @@ ensure_base_deps() {
     fi
 
     log_detail "Updating apt package index"
-    $SUDO apt-get update -y
+    try_step "Updating apt package index" $SUDO apt-get update -y || return 1
 
     log_detail "Installing base packages"
-    $SUDO apt-get install -y curl git ca-certificates unzip tar xz-utils jq build-essential sudo gnupg
+    try_step "Installing base packages" $SUDO apt-get install -y curl git ca-certificates unzip tar xz-utils jq build-essential sudo gnupg || return 1
 }
 
 # ============================================================
 # Phase 1: User normalization
 # ============================================================
 normalize_user() {
+    set_phase "normalize_user" "User Normalization" 2
     log_step "2/10" "Normalizing user account..."
 
     # Create target user if it doesn't exist
     if ! id "$TARGET_USER" &>/dev/null; then
         log_detail "Creating user: $TARGET_USER"
-        $SUDO useradd -m -s /bin/bash "$TARGET_USER" || true
-        $SUDO usermod -aG sudo "$TARGET_USER"
+        try_step "Creating user $TARGET_USER" $SUDO useradd -m -s /bin/bash "$TARGET_USER" || true
+        try_step "Adding $TARGET_USER to sudo group" $SUDO usermod -aG sudo "$TARGET_USER" || return 1
     fi
 
     # Set up passwordless sudo in vibe mode
     if [[ "$MODE" == "vibe" ]]; then
         log_detail "Enabling passwordless sudo for $TARGET_USER"
-        echo "$TARGET_USER ALL=(ALL) NOPASSWD:ALL" | $SUDO tee /etc/sudoers.d/90-ubuntu-acfs > /dev/null
-        $SUDO chmod 440 /etc/sudoers.d/90-ubuntu-acfs
+        try_step_eval "Configuring passwordless sudo" \
+            "echo '$TARGET_USER ALL=(ALL) NOPASSWD:ALL' | $SUDO tee /etc/sudoers.d/90-ubuntu-acfs > /dev/null" || return 1
+        try_step "Setting sudoers file permissions" $SUDO chmod 440 /etc/sudoers.d/90-ubuntu-acfs || return 1
         if command_exists visudo && ! $SUDO visudo -c -f /etc/sudoers.d/90-ubuntu-acfs >/dev/null 2>&1; then
             log_fatal "Invalid sudoers file generated at /etc/sudoers.d/90-ubuntu-acfs"
         fi
@@ -724,16 +767,16 @@ normalize_user() {
     # Copy SSH keys from root if running as root
     if [[ $EUID -eq 0 ]] && [[ -f /root/.ssh/authorized_keys ]]; then
         log_detail "Copying SSH keys to $TARGET_USER"
-        $SUDO mkdir -p "$TARGET_HOME/.ssh"
-        $SUDO cp /root/.ssh/authorized_keys "$TARGET_HOME/.ssh/"
-        $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.ssh"
-        $SUDO chmod 700 "$TARGET_HOME/.ssh"
-        $SUDO chmod 600 "$TARGET_HOME/.ssh/authorized_keys"
+        try_step "Creating .ssh directory" $SUDO mkdir -p "$TARGET_HOME/.ssh" || return 1
+        try_step "Copying SSH authorized_keys" $SUDO cp /root/.ssh/authorized_keys "$TARGET_HOME/.ssh/" || return 1
+        try_step "Setting SSH directory ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.ssh" || return 1
+        try_step "Setting SSH directory permissions" $SUDO chmod 700 "$TARGET_HOME/.ssh" || return 1
+        try_step "Setting authorized_keys permissions" $SUDO chmod 600 "$TARGET_HOME/.ssh/authorized_keys" || return 1
     fi
 
     # Add target user to docker group if docker is installed
     if getent group docker &>/dev/null; then
-        $SUDO usermod -aG docker "$TARGET_USER" 2>/dev/null || true
+        try_step "Adding $TARGET_USER to docker group" $SUDO usermod -aG docker "$TARGET_USER" || true
     fi
 
     log_success "User normalization complete"
@@ -743,6 +786,7 @@ normalize_user() {
 # Phase 2: Filesystem setup
 # ============================================================
 setup_filesystem() {
+    set_phase "setup_filesystem" "Filesystem Setup" 3
     log_step "3/10" "Setting up filesystem..."
 
     # System directories
@@ -750,26 +794,26 @@ setup_filesystem() {
     for dir in "${sys_dirs[@]}"; do
         if [[ ! -d "$dir" ]]; then
             log_detail "Creating: $dir"
-            $SUDO mkdir -p "$dir"
+            try_step "Creating $dir" $SUDO mkdir -p "$dir" || return 1
         fi
     done
 
     # Ensure /data is owned by target user
-    $SUDO chown -R "$TARGET_USER:$TARGET_USER" /data 2>/dev/null || true
+    try_step "Setting /data ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" /data || true
 
     # User directories (in TARGET_HOME, not $HOME)
     local user_dirs=("$TARGET_HOME/Development" "$TARGET_HOME/Projects" "$TARGET_HOME/dotfiles")
     for dir in "${user_dirs[@]}"; do
         if [[ ! -d "$dir" ]]; then
             log_detail "Creating: $dir"
-            $SUDO mkdir -p "$dir"
+            try_step "Creating $dir" $SUDO mkdir -p "$dir" || return 1
         fi
     done
 
     # Create ACFS directories
-    $SUDO mkdir -p "$ACFS_HOME"/{zsh,tmux,bin,docs,logs}
-    $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$ACFS_HOME"
-    $SUDO mkdir -p "$ACFS_LOG_DIR"
+    try_step "Creating ACFS directories" $SUDO mkdir -p "$ACFS_HOME"/{zsh,tmux,bin,docs,logs} || return 1
+    try_step "Setting ACFS directory ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$ACFS_HOME" || return 1
+    try_step "Creating ACFS log directory" $SUDO mkdir -p "$ACFS_LOG_DIR" || return 1
 
     log_success "Filesystem setup complete"
 }
@@ -778,12 +822,13 @@ setup_filesystem() {
 # Phase 3: Shell setup (zsh + oh-my-zsh + p10k)
 # ============================================================
 setup_shell() {
+    set_phase "setup_shell" "Shell Setup" 4
     log_step "4/10" "Setting up shell..."
 
     # Install zsh
     if ! command_exists zsh; then
         log_detail "Installing zsh"
-        $SUDO apt-get install -y zsh
+        try_step "Installing zsh" $SUDO apt-get install -y zsh || return 1
     fi
 
     # Install Oh My Zsh for target user
@@ -808,14 +853,14 @@ setup_shell() {
     if [[ "$omz_installed" != "true" ]]; then
         log_detail "Installing Oh My Zsh for $TARGET_USER"
         # Run as target user to install in their home
-        acfs_run_verified_upstream_script_as_target "ohmyzsh" "sh" --unattended
+        try_step "Installing Oh My Zsh" acfs_run_verified_upstream_script_as_target "ohmyzsh" "sh" --unattended || return 1
     fi
 
     # Install Powerlevel10k theme
     local p10k_dir="$omz_dir/custom/themes/powerlevel10k"
     if [[ ! -d "$p10k_dir" ]]; then
         log_detail "Installing Powerlevel10k theme"
-        run_as_target git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$p10k_dir"
+        try_step "Installing Powerlevel10k theme" run_as_target git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$p10k_dir" || return 1
     fi
 
     # Install zsh plugins
@@ -823,18 +868,18 @@ setup_shell() {
 
     if [[ ! -d "$custom_plugins/zsh-autosuggestions" ]]; then
         log_detail "Installing zsh-autosuggestions"
-        run_as_target git clone https://github.com/zsh-users/zsh-autosuggestions "$custom_plugins/zsh-autosuggestions"
+        try_step "Installing zsh-autosuggestions" run_as_target git clone https://github.com/zsh-users/zsh-autosuggestions "$custom_plugins/zsh-autosuggestions" || return 1
     fi
 
     if [[ ! -d "$custom_plugins/zsh-syntax-highlighting" ]]; then
         log_detail "Installing zsh-syntax-highlighting"
-        run_as_target git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$custom_plugins/zsh-syntax-highlighting"
+        try_step "Installing zsh-syntax-highlighting" run_as_target git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$custom_plugins/zsh-syntax-highlighting" || return 1
     fi
 
     # Copy ACFS zshrc
     log_detail "Installing ACFS zshrc"
-    install_asset "acfs/zsh/acfs.zshrc" "$ACFS_HOME/zsh/acfs.zshrc"
-    $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/zsh/acfs.zshrc"
+    try_step "Installing ACFS zshrc" install_asset "acfs/zsh/acfs.zshrc" "$ACFS_HOME/zsh/acfs.zshrc" || return 1
+    try_step "Setting zshrc ownership" $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/zsh/acfs.zshrc" || return 1
 
     # Create minimal .zshrc loader for target user (backup existing if needed)
     local user_zshrc="$TARGET_HOME/.zshrc"
@@ -853,14 +898,14 @@ source "$HOME/.acfs/zsh/acfs.zshrc"
 # User overrides live here forever
 [ -f "$HOME/.zshrc.local" ] && source "$HOME/.zshrc.local"
 EOF
-    $SUDO chown "$TARGET_USER:$TARGET_USER" "$user_zshrc"
+    try_step "Setting .zshrc ownership" $SUDO chown "$TARGET_USER:$TARGET_USER" "$user_zshrc" || return 1
 
     # Set zsh as default shell for target user
     local current_shell
     current_shell=$(getent passwd "$TARGET_USER" | cut -d: -f7)
     if [[ "$current_shell" != *"zsh"* ]]; then
         log_detail "Setting zsh as default shell for $TARGET_USER"
-        $SUDO chsh -s "$(which zsh)" "$TARGET_USER" || true
+        try_step "Setting zsh as default shell" $SUDO chsh -s "$(which zsh)" "$TARGET_USER" || true
     fi
 
     log_success "Shell setup complete"
@@ -911,6 +956,7 @@ install_github_cli() {
 }
 
 install_cli_tools() {
+    set_phase "install_cli_tools" "CLI Tools" 5
     log_step "5/10" "Installing CLI tools..."
 
     # Install gum if not already installed (install_gum_early may have skipped
@@ -919,11 +965,11 @@ install_cli_tools() {
         log_detail "gum already installed"
     else
         log_detail "Installing gum for glamorous shell scripts"
-        $SUDO mkdir -p /etc/apt/keyrings
-        acfs_curl https://repo.charm.sh/apt/gpg.key | $SUDO gpg --dearmor -o /etc/apt/keyrings/charm.gpg 2>/dev/null || true
-        echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | $SUDO tee /etc/apt/sources.list.d/charm.list > /dev/null
-        $SUDO apt-get update -y >/dev/null 2>&1 || true
-        if $SUDO apt-get install -y gum 2>/dev/null; then
+        try_step "Creating apt keyrings directory" $SUDO mkdir -p /etc/apt/keyrings || true
+        try_step_eval "Adding Charm apt key" "acfs_curl https://repo.charm.sh/apt/gpg.key | $SUDO gpg --dearmor -o /etc/apt/keyrings/charm.gpg 2>/dev/null" || true
+        try_step_eval "Adding Charm apt repo" "echo 'deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *' | $SUDO tee /etc/apt/sources.list.d/charm.list > /dev/null" || true
+        try_step "Updating apt cache" $SUDO apt-get update -y || true
+        if try_step "Installing gum" $SUDO apt-get install -y gum 2>/dev/null; then
             HAS_GUM=true
             log_success "gum installed - enhanced UI now available"
         else
@@ -932,13 +978,13 @@ install_cli_tools() {
     fi
 
     log_detail "Installing required apt packages"
-    $SUDO apt-get install -y ripgrep tmux fzf direnv jq git-lfs lsof dnsutils netcat-openbsd strace rsync
+    try_step "Installing required apt packages" $SUDO apt-get install -y ripgrep tmux fzf direnv jq git-lfs lsof dnsutils netcat-openbsd strace rsync || return 1
 
     # GitHub CLI (gh)
     if command_exists gh; then
         log_detail "gh already installed ($(gh --version 2>/dev/null | head -1 || echo 'gh'))"
     else
-        if install_github_cli; then
+        if try_step "Installing GitHub CLI" install_github_cli; then
             log_success "gh installed"
         else
             log_fatal "Failed to install GitHub CLI (gh)"
@@ -948,17 +994,17 @@ install_cli_tools() {
     # Git LFS setup (best-effort: installs hooks config for the target user)
     if command_exists git-lfs; then
         log_detail "Configuring git-lfs for $TARGET_USER"
-        run_as_target git lfs install --skip-repo >/dev/null 2>&1 || true
+        try_step "Configuring git-lfs" run_as_target git lfs install --skip-repo || true
     fi
 
     log_detail "Installing optional apt packages"
-    $SUDO apt-get install -y \
+    try_step "Installing optional apt packages" $SUDO apt-get install -y \
         lsd eza bat fd-find btop dust neovim \
         docker.io docker-compose-plugin \
-        lazygit 2>/dev/null || true
+        lazygit || true
 
     # Add user to docker group
-    $SUDO usermod -aG docker "$TARGET_USER" 2>/dev/null || true
+    try_step "Adding $TARGET_USER to docker group" $SUDO usermod -aG docker "$TARGET_USER" || true
 
     log_success "CLI tools installed"
 }
@@ -967,27 +1013,28 @@ install_cli_tools() {
 # Phase 5: Language runtimes
 # ============================================================
 install_languages() {
+    set_phase "install_languages" "Language Runtimes" 6
     log_step "6/10" "Installing language runtimes..."
 
     # Bun (install as target user)
     local bun_bin="$TARGET_HOME/.bun/bin/bun"
     if [[ ! -x "$bun_bin" ]]; then
         log_detail "Installing Bun for $TARGET_USER"
-        acfs_run_verified_upstream_script_as_target "bun" "bash"
+        try_step "Installing Bun" acfs_run_verified_upstream_script_as_target "bun" "bash" || return 1
     fi
 
     # Rust (install as target user)
     local cargo_bin="$TARGET_HOME/.cargo/bin/cargo"
     if [[ ! -x "$cargo_bin" ]]; then
         log_detail "Installing Rust for $TARGET_USER"
-        acfs_run_verified_upstream_script_as_target "rust" "sh" -y
+        try_step "Installing Rust" acfs_run_verified_upstream_script_as_target "rust" "sh" -y || return 1
     fi
 
     # ast-grep (sg) - required by UBS for syntax-aware scanning
     if [[ ! -x "$TARGET_HOME/.cargo/bin/sg" ]]; then
         if [[ -x "$cargo_bin" ]]; then
             log_detail "Installing ast-grep (sg) via cargo"
-            if run_as_target "$cargo_bin" install ast-grep --locked; then
+            if try_step "Installing ast-grep via cargo" run_as_target "$cargo_bin" install ast-grep --locked; then
                 log_success "ast-grep installed"
             else
                 log_fatal "Failed to install ast-grep (sg)"
@@ -1000,7 +1047,7 @@ install_languages() {
     # Go (system-wide)
     if ! command_exists go; then
         log_detail "Installing Go"
-        $SUDO apt-get install -y golang-go
+        try_step "Installing Go" $SUDO apt-get install -y golang-go || return 1
     fi
 
     # uv (install as target user)
@@ -1008,7 +1055,7 @@ install_languages() {
         log_detail "uv already installed"
     else
         log_detail "Installing uv for $TARGET_USER"
-        acfs_run_verified_upstream_script_as_target "uv" "sh"
+        try_step "Installing uv" acfs_run_verified_upstream_script_as_target "uv" "sh" || return 1
     fi
 
     # Atuin (install as target user)
@@ -1017,7 +1064,7 @@ install_languages() {
         log_detail "Atuin already installed"
     else
         log_detail "Installing Atuin for $TARGET_USER"
-        acfs_run_verified_upstream_script_as_target "atuin" "sh"
+        try_step "Installing Atuin" acfs_run_verified_upstream_script_as_target "atuin" "sh" || return 1
     fi
 
     # Zoxide (install as target user)
@@ -1026,7 +1073,7 @@ install_languages() {
         log_detail "Zoxide already installed"
     else
         log_detail "Installing Zoxide for $TARGET_USER"
-        acfs_run_verified_upstream_script_as_target "zoxide" "sh"
+        try_step "Installing Zoxide" acfs_run_verified_upstream_script_as_target "zoxide" "sh" || return 1
     fi
 
     log_success "Language runtimes installed"
@@ -1036,6 +1083,7 @@ install_languages() {
 # Phase 6: Coding agents
 # ============================================================
 install_agents() {
+    set_phase "install_agents" "Coding Agents" 7
     log_step "7/10" "Installing coding agents..."
 
     # Use target user's bun
@@ -1055,16 +1103,16 @@ install_agents() {
         log_detail "Claude Code already installed ($claude_bin_bun)"
     else
         log_detail "Installing Claude Code (native) for $TARGET_USER"
-        acfs_run_verified_upstream_script_as_target "claude" "bash" stable
+        try_step "Installing Claude Code" acfs_run_verified_upstream_script_as_target "claude" "bash" stable || return 1
     fi
 
     # Codex CLI (install as target user)
     log_detail "Installing Codex CLI for $TARGET_USER"
-    run_as_target "$bun_bin" install -g @openai/codex@latest 2>/dev/null || true
+    try_step "Installing Codex CLI" run_as_target "$bun_bin" install -g @openai/codex@latest || true
 
     # Gemini CLI (install as target user)
     log_detail "Installing Gemini CLI for $TARGET_USER"
-    run_as_target "$bun_bin" install -g @google/gemini-cli@latest 2>/dev/null || true
+    try_step "Installing Gemini CLI" run_as_target "$bun_bin" install -g @google/gemini-cli@latest || true
 
     log_success "Coding agents installed"
 }
@@ -1073,6 +1121,7 @@ install_agents() {
 # Phase 7: Cloud & database tools
 # ============================================================
 install_cloud_db() {
+    set_phase "install_cloud_db" "Cloud & Database Tools" 8
     log_step "8/10" "Installing cloud & database tools..."
 
     local codename="noble"
@@ -1089,24 +1138,22 @@ install_cloud_db() {
         log_detail "PostgreSQL already installed ($(psql --version 2>/dev/null | head -1 || echo 'psql'))"
     else
         log_detail "Installing PostgreSQL 18 (PGDG repo, codename=$codename)"
-        $SUDO mkdir -p /etc/apt/keyrings
+        try_step "Creating apt keyrings for PostgreSQL" $SUDO mkdir -p /etc/apt/keyrings || true
 
-        if ! acfs_curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-            $SUDO gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg 2>/dev/null; then
+        if ! try_step_eval "Adding PostgreSQL apt key" "acfs_curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | $SUDO gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg 2>/dev/null"; then
             log_warn "PostgreSQL: failed to install signing key (skipping)"
         else
-            echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${codename}-pgdg main" | \
-                $SUDO tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+            try_step_eval "Adding PostgreSQL apt repo" "echo 'deb [signed-by=/etc/apt/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${codename}-pgdg main' | $SUDO tee /etc/apt/sources.list.d/pgdg.list > /dev/null" || true
 
-            $SUDO apt-get update -y >/dev/null 2>&1 || log_warn "PostgreSQL: apt-get update failed (continuing)"
+            try_step "Updating apt cache for PostgreSQL" $SUDO apt-get update -y || log_warn "PostgreSQL: apt-get update failed (continuing)"
 
-            if $SUDO apt-get install -y postgresql-18 postgresql-client-18 >/dev/null 2>&1; then
+            if try_step "Installing PostgreSQL 18" $SUDO apt-get install -y postgresql-18 postgresql-client-18; then
                 log_success "PostgreSQL 18 installed"
 
                 # Best-effort service start (containers may not have systemd)
                 if command_exists systemctl; then
-                    $SUDO systemctl enable postgresql >/dev/null 2>&1 || true
-                    $SUDO systemctl start postgresql >/dev/null 2>&1 || true
+                    try_step "Enabling PostgreSQL service" $SUDO systemctl enable postgresql || true
+                    try_step "Starting PostgreSQL service" $SUDO systemctl start postgresql || true
                 fi
 
                 # Best-effort role + db for target user
@@ -1198,6 +1245,7 @@ binary_installed() {
 }
 
 install_stack() {
+    set_phase "install_stack" "Dicklesworthstone Stack" 9
     log_step "9/10" "Installing Dicklesworthstone stack..."
 
     # NTM (Named Tmux Manager)
@@ -1205,7 +1253,7 @@ install_stack() {
         log_detail "NTM already installed"
     else
         log_detail "Installing NTM"
-        acfs_run_verified_upstream_script_as_target "ntm" "bash" || log_warn "NTM installation may have failed"
+        try_step "Installing NTM" acfs_run_verified_upstream_script_as_target "ntm" "bash" || log_warn "NTM installation may have failed"
     fi
 
     # MCP Agent Mail (check for mcp-agent-mail stub or mcp_agent_mail directory)
@@ -1213,7 +1261,7 @@ install_stack() {
         log_detail "MCP Agent Mail already installed"
     else
         log_detail "Installing MCP Agent Mail"
-        acfs_run_verified_upstream_script_as_target "mcp_agent_mail" "bash" --yes || log_warn "MCP Agent Mail installation may have failed"
+        try_step "Installing MCP Agent Mail" acfs_run_verified_upstream_script_as_target "mcp_agent_mail" "bash" --yes || log_warn "MCP Agent Mail installation may have failed"
     fi
 
     # Ultimate Bug Scanner
@@ -1221,7 +1269,7 @@ install_stack() {
         log_detail "Ultimate Bug Scanner already installed"
     else
         log_detail "Installing Ultimate Bug Scanner"
-        acfs_run_verified_upstream_script_as_target "ubs" "bash" --easy-mode || log_warn "UBS installation may have failed"
+        try_step "Installing UBS" acfs_run_verified_upstream_script_as_target "ubs" "bash" --easy-mode || log_warn "UBS installation may have failed"
     fi
 
     # Beads Viewer
@@ -1229,7 +1277,7 @@ install_stack() {
         log_detail "Beads Viewer already installed"
     else
         log_detail "Installing Beads Viewer"
-        acfs_run_verified_upstream_script_as_target "bv" "bash" || log_warn "Beads Viewer installation may have failed"
+        try_step "Installing Beads Viewer" acfs_run_verified_upstream_script_as_target "bv" "bash" || log_warn "Beads Viewer installation may have failed"
     fi
 
     # CASS (Coding Agent Session Search)
@@ -1237,7 +1285,7 @@ install_stack() {
         log_detail "CASS already installed"
     else
         log_detail "Installing CASS"
-        acfs_run_verified_upstream_script_as_target "cass" "bash" --easy-mode --verify || log_warn "CASS installation may have failed"
+        try_step "Installing CASS" acfs_run_verified_upstream_script_as_target "cass" "bash" --easy-mode --verify || log_warn "CASS installation may have failed"
     fi
 
     # CASS Memory System
@@ -1245,7 +1293,7 @@ install_stack() {
         log_detail "CASS Memory System already installed"
     else
         log_detail "Installing CASS Memory System"
-        acfs_run_verified_upstream_script_as_target "cm" "bash" --easy-mode --verify || log_warn "CM installation may have failed"
+        try_step "Installing CM" acfs_run_verified_upstream_script_as_target "cm" "bash" --easy-mode --verify || log_warn "CM installation may have failed"
     fi
 
     # CAAM (Coding Agent Account Manager)
@@ -1253,7 +1301,7 @@ install_stack() {
         log_detail "CAAM already installed"
     else
         log_detail "Installing CAAM"
-        acfs_run_verified_upstream_script_as_target "caam" "bash" || log_warn "CAAM installation may have failed"
+        try_step "Installing CAAM" acfs_run_verified_upstream_script_as_target "caam" "bash" || log_warn "CAAM installation may have failed"
     fi
 
     # SLB (Simultaneous Launch Button)
@@ -1261,7 +1309,7 @@ install_stack() {
         log_detail "SLB already installed"
     else
         log_detail "Installing SLB"
-        acfs_run_verified_upstream_script_as_target "slb" "bash" || log_warn "SLB installation may have failed"
+        try_step "Installing SLB" acfs_run_verified_upstream_script_as_target "slb" "bash" || log_warn "SLB installation may have failed"
     fi
 
     log_success "Dicklesworthstone stack installed"
@@ -1271,21 +1319,22 @@ install_stack() {
 # Phase 9: Final wiring
 # ============================================================
 finalize() {
+    set_phase "finalize" "Final Wiring" 10
     log_step "10/10" "Finalizing installation..."
 
     # Copy tmux config
     log_detail "Installing tmux config"
-    install_asset "acfs/tmux/tmux.conf" "$ACFS_HOME/tmux/tmux.conf"
-    $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/tmux/tmux.conf"
+    try_step "Installing tmux config" install_asset "acfs/tmux/tmux.conf" "$ACFS_HOME/tmux/tmux.conf" || return 1
+    try_step "Setting tmux config ownership" $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/tmux/tmux.conf" || return 1
 
     # Link to target user's tmux.conf if it doesn't exist
     if [[ ! -f "$TARGET_HOME/.tmux.conf" ]]; then
-        run_as_target ln -sf "$ACFS_HOME/tmux/tmux.conf" "$TARGET_HOME/.tmux.conf"
+        try_step "Linking tmux.conf" run_as_target ln -sf "$ACFS_HOME/tmux/tmux.conf" "$TARGET_HOME/.tmux.conf" || return 1
     fi
 
     # Install onboard lessons + command
     log_detail "Installing onboard lessons"
-    $SUDO mkdir -p "$ACFS_HOME/onboard/lessons"
+    try_step "Creating onboard lessons directory" $SUDO mkdir -p "$ACFS_HOME/onboard/lessons" || return 1
     local lesson_files=(
         "00_welcome.md"
         "01_linux_basics.md"
@@ -1302,48 +1351,48 @@ finalize() {
     done
 
     log_detail "Installing onboard command"
-    install_asset "packages/onboard/onboard.sh" "$ACFS_HOME/onboard/onboard.sh"
-    $SUDO chmod 755 "$ACFS_HOME/onboard/onboard.sh"
-    $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/onboard"
+    try_step "Installing onboard script" install_asset "packages/onboard/onboard.sh" "$ACFS_HOME/onboard/onboard.sh" || return 1
+    try_step "Setting onboard permissions" $SUDO chmod 755 "$ACFS_HOME/onboard/onboard.sh" || return 1
+    try_step "Setting onboard ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/onboard" || return 1
 
-    run_as_target mkdir -p "$TARGET_HOME/.local/bin"
-    run_as_target ln -sf "$ACFS_HOME/onboard/onboard.sh" "$TARGET_HOME/.local/bin/onboard"
+    try_step "Creating .local/bin directory" run_as_target mkdir -p "$TARGET_HOME/.local/bin" || return 1
+    try_step "Linking onboard command" run_as_target ln -sf "$ACFS_HOME/onboard/onboard.sh" "$TARGET_HOME/.local/bin/onboard" || return 1
 
     # Install acfs scripts (for acfs CLI subcommands)
     log_detail "Installing acfs scripts"
-    $SUDO mkdir -p "$ACFS_HOME/scripts/lib"
+    try_step "Creating ACFS scripts directory" $SUDO mkdir -p "$ACFS_HOME/scripts/lib" || return 1
 
     # Install script libraries
-    install_asset "scripts/lib/logging.sh" "$ACFS_HOME/scripts/lib/logging.sh"
-    install_asset "scripts/lib/gum_ui.sh" "$ACFS_HOME/scripts/lib/gum_ui.sh"
-    install_asset "scripts/lib/security.sh" "$ACFS_HOME/scripts/lib/security.sh"
-    install_asset "scripts/lib/doctor.sh" "$ACFS_HOME/scripts/lib/doctor.sh"
-    install_asset "scripts/lib/update.sh" "$ACFS_HOME/scripts/lib/update.sh"
+    try_step "Installing logging.sh" install_asset "scripts/lib/logging.sh" "$ACFS_HOME/scripts/lib/logging.sh" || return 1
+    try_step "Installing gum_ui.sh" install_asset "scripts/lib/gum_ui.sh" "$ACFS_HOME/scripts/lib/gum_ui.sh" || return 1
+    try_step "Installing security.sh" install_asset "scripts/lib/security.sh" "$ACFS_HOME/scripts/lib/security.sh" || return 1
+    try_step "Installing doctor.sh" install_asset "scripts/lib/doctor.sh" "$ACFS_HOME/scripts/lib/doctor.sh" || return 1
+    try_step "Installing update.sh" install_asset "scripts/lib/update.sh" "$ACFS_HOME/scripts/lib/update.sh" || return 1
 
     # Install services-setup wizard
-    install_asset "scripts/services-setup.sh" "$ACFS_HOME/scripts/services-setup.sh"
-    $SUDO chmod 755 "$ACFS_HOME/scripts/services-setup.sh"
-    $SUDO chmod 755 "$ACFS_HOME/scripts/lib/"*.sh
-    $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/scripts"
+    try_step "Installing services-setup.sh" install_asset "scripts/services-setup.sh" "$ACFS_HOME/scripts/services-setup.sh" || return 1
+    try_step "Setting scripts permissions" $SUDO chmod 755 "$ACFS_HOME/scripts/services-setup.sh" || return 1
+    try_step "Setting lib scripts permissions" $SUDO chmod 755 "$ACFS_HOME/scripts/lib/"*.sh || return 1
+    try_step "Setting scripts ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/scripts" || return 1
 
     # Install checksums + version metadata so `acfs update --stack` can verify upstream scripts.
-    install_asset "checksums.yaml" "$ACFS_HOME/checksums.yaml"
-    install_asset "VERSION" "$ACFS_HOME/VERSION"
-    $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/checksums.yaml" "$ACFS_HOME/VERSION" 2>/dev/null || true
+    try_step "Installing checksums.yaml" install_asset "checksums.yaml" "$ACFS_HOME/checksums.yaml" || return 1
+    try_step "Installing VERSION" install_asset "VERSION" "$ACFS_HOME/VERSION" || return 1
+    try_step "Setting metadata ownership" $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/checksums.yaml" "$ACFS_HOME/VERSION" || true
 
     # Legacy: Install doctor as acfs binary (for backwards compat)
-    install_asset "scripts/lib/doctor.sh" "$ACFS_HOME/bin/acfs"
-    $SUDO chmod 755 "$ACFS_HOME/bin/acfs"
-    $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/bin/acfs"
-    run_as_target ln -sf "$ACFS_HOME/bin/acfs" "$TARGET_HOME/.local/bin/acfs"
+    try_step "Installing acfs CLI" install_asset "scripts/lib/doctor.sh" "$ACFS_HOME/bin/acfs" || return 1
+    try_step "Setting acfs permissions" $SUDO chmod 755 "$ACFS_HOME/bin/acfs" || return 1
+    try_step "Setting acfs ownership" $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/bin/acfs" || return 1
+    try_step "Linking acfs command" run_as_target ln -sf "$ACFS_HOME/bin/acfs" "$TARGET_HOME/.local/bin/acfs" || return 1
 
     # Install Claude destructive-command guard hook automatically.
     #
     # This is especially important because ACFS config includes "dangerous mode"
     # aliases (e.g., `cc`) that can run commands without interactive approvals.
     log_detail "Installing Claude Git Safety Guard (PreToolUse hook)"
-    TARGET_USER="$TARGET_USER" TARGET_HOME="$TARGET_HOME" \
-        "$ACFS_HOME/scripts/services-setup.sh" --install-claude-guard --yes || \
+    try_step_eval "Installing Claude Git Safety Guard" \
+        "TARGET_USER='$TARGET_USER' TARGET_HOME='$TARGET_HOME' '$ACFS_HOME/scripts/services-setup.sh' --install-claude-guard --yes" || \
         log_warn "Claude Git Safety Guard installation failed (optional)"
 
     # Create state file

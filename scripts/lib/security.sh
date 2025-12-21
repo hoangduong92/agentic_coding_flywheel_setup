@@ -31,6 +31,69 @@ acfs_curl() {
     curl "${ACFS_CURL_BASE_ARGS[@]}" "$@"
 }
 
+# Preserve trailing newlines when capturing remote script content.
+ACFS_EOF_SENTINEL="__ACFS_EOF_SENTINEL__"
+
+# Automatic retries for transient network errors (fast total budget).
+ACFS_CURL_RETRY_DELAYS=(0 5 15)
+
+acfs_is_retryable_curl_exit_code() {
+    local exit_code="${1:-0}"
+    case "$exit_code" in
+        6|7|28|35|52|56) return 0 ;; # DNS/connect/timeout/SSL/empty reply/recv error
+        *) return 1 ;;
+    esac
+}
+
+# Fetch URL content with retries and an EOF sentinel appended.
+# - Prints: <content><sentinel> on stdout (no trailing newline)
+# - Returns: 0 on success; curl exit code on non-retryable failures; 1 on exhausted retries
+acfs_curl_with_retry_and_sentinel() {
+    local url="$1"
+    local name="${2:-$url}"
+    local sentinel="${ACFS_EOF_SENTINEL}"
+
+    local max_attempts="${#ACFS_CURL_RETRY_DELAYS[@]}"
+    if (( max_attempts == 0 )); then
+        ACFS_CURL_RETRY_DELAYS=(0 5 15)
+        max_attempts="${#ACFS_CURL_RETRY_DELAYS[@]}"
+    fi
+
+    local retries=$((max_attempts - 1))
+    local attempt delay
+    for ((attempt=0; attempt<max_attempts; attempt++)); do
+        delay="${ACFS_CURL_RETRY_DELAYS[$attempt]}"
+
+        if (( attempt > 0 )); then
+            log_info "Retry ${attempt}/${retries} for fetching ${name} (waiting ${delay}s)..."
+            sleep "$delay"
+        fi
+
+        local content status
+        content="$(
+            acfs_curl "$url" 2>/dev/null
+            status=$?
+            if (( status != 0 )); then
+                exit "$status"
+            fi
+            printf '%s' "$sentinel"
+        )"
+        status=$?
+
+        if (( status == 0 )) && [[ "$content" == *"$sentinel" ]]; then
+            (( attempt > 0 )) && log_info "Succeeded on retry ${attempt} for fetching ${name}"
+            printf '%s' "$content"
+            return 0
+        fi
+
+        if ! acfs_is_retryable_curl_exit_code "$status"; then
+            return "$status"
+        fi
+    done
+
+    return 1
+}
+
 # Checksums file location.
 # Prefer the repo-root checksums.yaml based on this script's location.
 DEFAULT_CHECKSUMS_FILE="$SECURITY_SCRIPT_DIR/../../checksums.yaml"
@@ -117,11 +180,10 @@ fetch_checksum() {
         return 1
     fi
 
-    local sentinel="__ACFS_EOF_SENTINEL__"
+    local sentinel="${ACFS_EOF_SENTINEL}"
     local content
     content="$(
-        acfs_curl "$url" 2>/dev/null || exit 1
-        printf '%s' "$sentinel"
+        acfs_curl_with_retry_and_sentinel "$url" "$url"
     )" || {
         echo "ERROR: Failed to fetch $url" >&2
         return 1
@@ -154,11 +216,10 @@ verify_checksum() {
     # NOTE: Bash command substitution trims trailing newlines, so we append a
     # sentinel token to preserve the original content verbatim (including
     # trailing newlines) without writing temp files.
-    local sentinel="__ACFS_EOF_SENTINEL__"
+    local sentinel="${ACFS_EOF_SENTINEL}"
     local content
     content="$(
-        acfs_curl "$url" 2>/dev/null || exit 1
-        printf '%s' "$sentinel"
+        acfs_curl_with_retry_and_sentinel "$url" "$name"
     )" || {
         echo -e "${RED}Security Error:${NC} Failed to fetch $name" >&2
         return 1
@@ -213,6 +274,105 @@ fetch_and_run() {
         set -o pipefail
         verify_checksum "$url" "$expected_sha256" "$name" | bash -s -- "${args[@]}"
     )
+}
+
+# ============================================================
+# Fetch and Run with Recovery (bead anq)
+# ============================================================
+
+# Fetch and run installer with checksum mismatch recovery
+#
+# Unlike fetch_and_run(), this function handles checksum mismatches
+# gracefully by calling handle_checksum_mismatch() which can:
+#   - Skip the tool (return 0)
+#   - Abort installation (return 1)
+#   - Proceed with the new version (return 2)
+#
+# Arguments:
+#   $1 - URL to fetch
+#   $2 - Expected SHA256 checksum
+#   $3 - Tool name (for display and classification)
+#   $@ - Additional args to pass to the installer
+#
+# Environment:
+#   ACFS_INTERACTIVE - "true" for prompts, "false" for auto-handling
+#   ACFS_BATCH_CHECKSUMS - "true" to defer to batch handler
+#
+# Returns:
+#   0 - Success (installed or skipped)
+#   1 - Failure (abort or error)
+#
+fetch_and_run_with_recovery() {
+    local url="$1"
+    local expected_sha256="${2:-}"
+    local name="${3:-installer}"
+    shift 3 || true
+    local args=("$@")
+
+    if ! enforce_https "$url"; then
+        return 1
+    fi
+
+    if [[ -z "$expected_sha256" ]]; then
+        echo -e "${RED}Security Error:${NC} Missing checksum for $name" >&2
+        echo -e "  URL: $url" >&2
+        echo -e "  Refusing to execute unverified installer script." >&2
+        return 1
+    fi
+
+    # Fetch content with retries
+    local sentinel="${ACFS_EOF_SENTINEL}"
+    local content
+    content="$(acfs_curl_with_retry_and_sentinel "$url" "$name")" || {
+        echo -e "${RED}Error:${NC} Failed to fetch $name" >&2
+        return 1
+    }
+
+    if [[ "$content" != *"$sentinel" ]]; then
+        echo -e "${RED}Error:${NC} Failed to fetch $name" >&2
+        return 1
+    fi
+    content="${content%"$sentinel"}"
+
+    # Calculate actual checksum
+    local actual_sha256
+    actual_sha256=$(printf '%s' "$content" | calculate_sha256) || {
+        echo -e "${RED}Error:${NC} Failed to calculate checksum for $name" >&2
+        return 1
+    }
+
+    # Check for mismatch
+    if [[ "$actual_sha256" != "$expected_sha256" ]]; then
+        # Call mismatch handler
+        handle_checksum_mismatch "$name" "$expected_sha256" "$actual_sha256" "$url"
+        local mismatch_result=$?
+
+        case $mismatch_result in
+            0)
+                # Skip - tool was skipped, continue installation
+                echo -e "${YELLOW}Skipped:${NC} $name (checksum mismatch)" >&2
+                return 0
+                ;;
+            1)
+                # Abort - user or policy chose to abort
+                return 1
+                ;;
+            2)
+                # Proceed - run with new version
+                echo -e "${GREEN}Proceeding:${NC} $name (new version accepted)" >&2
+                ;;
+            *)
+                # Unknown result, abort for safety
+                echo -e "${RED}Error:${NC} Unexpected handler result" >&2
+                return 1
+                ;;
+        esac
+    else
+        echo -e "${GREEN}Verified:${NC} $name" >&2
+    fi
+
+    # Run the installer
+    printf '%s' "$content" | bash -s -- "${args[@]}"
 }
 
 # ============================================================
@@ -532,6 +692,123 @@ _handle_mismatches_noninteractive() {
     echo -e "${YELLOW}Non-critical tools skipped. Proceeding with installation.${NC}" >&2
     clear_checksum_mismatches
     return 0
+}
+
+# ============================================================
+# Per-Tool Checksum Mismatch Handler
+# Related: agentic_coding_flywheel_setup-anq
+# ============================================================
+
+# Handle a single checksum mismatch with skip/abort/proceed options
+#
+# This function provides immediate per-tool handling when not using
+# batch mode (handle_all_checksum_mismatches).
+#
+# Arguments:
+#   $1 - Tool name
+#   $2 - Expected checksum
+#   $3 - Actual checksum
+#   $4 - URL
+#
+# Environment:
+#   ACFS_INTERACTIVE - "true" for interactive, "false" for non-interactive
+#   ACFS_BATCH_CHECKSUMS - "true" to record for batch handling instead
+#
+# Returns:
+#   0 - Skip this tool, continue installation
+#   1 - Abort installation
+#   2 - Proceed anyway (use the new version)
+#
+handle_checksum_mismatch() {
+    local tool="$1"
+    local expected="$2"
+    local actual="$3"
+    local url="$4"
+
+    # If batch mode is enabled, just record and return proceed
+    if [[ "${ACFS_BATCH_CHECKSUMS:-false}" == "true" ]]; then
+        record_checksum_mismatch "$tool" "$url" "$expected" "$actual"
+        return 2  # Caller should proceed (batch handler decides later)
+    fi
+
+    # Source tools.sh for classification if not already loaded
+    local tools_lib="${SECURITY_SCRIPT_DIR}/tools.sh"
+    if ! declare -f is_critical_tool &>/dev/null && [[ -r "$tools_lib" ]]; then
+        # shellcheck source=tools.sh
+        source "$tools_lib"
+    fi
+
+    local is_critical=false
+    if declare -f is_critical_tool &>/dev/null && is_critical_tool "$tool"; then
+        is_critical=true
+    fi
+
+    # Non-interactive mode
+    if [[ "${ACFS_INTERACTIVE:-true}" == "false" ]]; then
+        if [[ "$is_critical" == "true" ]]; then
+            echo -e "${RED}CRITICAL tool $tool has checksum mismatch - aborting${NC}" >&2
+            return 1  # Abort
+        else
+            echo -e "${YELLOW}Skipping $tool (checksum mismatch, non-interactive)${NC}" >&2
+            if declare -f handle_tool_failure &>/dev/null; then
+                handle_tool_failure "$tool" "Checksum mismatch (auto-skipped)"
+            fi
+            return 0  # Skip
+        fi
+    fi
+
+    # Interactive mode: show details and prompt
+    echo "" >&2
+    echo -e "${YELLOW}━━━ Checksum Mismatch: $tool ━━━${NC}" >&2
+    echo "" >&2
+
+    local classification_label
+    if [[ "$is_critical" == "true" ]]; then
+        classification_label="${RED}[CRITICAL]${NC}"
+    else
+        classification_label="${YELLOW}[optional]${NC}"
+    fi
+
+    echo -e "  Tool: $classification_label $tool" >&2
+    echo "  Expected: ${expected:0:16}..." >&2
+    echo "  Actual:   ${actual:0:16}..." >&2
+    echo "  URL: $url" >&2
+    echo "" >&2
+    echo "This usually means the upstream script was updated." >&2
+    echo "" >&2
+    echo "Options:" >&2
+    echo "  [P] Proceed with new version" >&2
+    echo "  [S] Skip this tool" >&2
+    echo "  [A] Abort installation" >&2
+    echo "" >&2
+
+    if [[ "$is_critical" == "true" ]]; then
+        echo -e "${RED}WARNING: Skipping a CRITICAL tool may break installation.${NC}" >&2
+    fi
+
+    local choice
+    read -r -p "Choice [P/s/a]: " choice < /dev/tty
+
+    case "${choice,,}" in
+        s|skip)
+            if declare -f handle_tool_failure &>/dev/null; then
+                handle_tool_failure "$tool" "Checksum mismatch (user chose to skip)"
+            fi
+            return 0  # Skip
+            ;;
+        a|abort)
+            echo -e "${RED}Installation aborted by user.${NC}" >&2
+            return 1  # Abort
+            ;;
+        p|proceed|"")
+            echo -e "${GREEN}Proceeding with new version of $tool...${NC}" >&2
+            return 2  # Proceed
+            ;;
+        *)
+            echo "Invalid choice. Aborting for safety." >&2
+            return 1  # Abort
+            ;;
+    esac
 }
 
 # Check installer and record mismatch if found
