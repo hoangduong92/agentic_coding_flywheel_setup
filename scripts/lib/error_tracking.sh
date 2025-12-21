@@ -176,7 +176,7 @@ try_step() {
         log_error "$description failed (exit $exit_code)"
     fi
 
-    return $exit_code
+    return "$exit_code"
 }
 
 # Execute a command that can fail without aborting
@@ -203,7 +203,7 @@ try_step_optional() {
         fi
     fi
 
-    return $exit_code
+    return "$exit_code"
 }
 
 # Execute a command with retry on failure
@@ -375,7 +375,7 @@ run_phase() {
     if ! "$func" "$@"; then
         exit_code=$?
         # Error state already set by try_step calls within the function
-        return $exit_code
+        return "$exit_code"
     fi
 
     clear_phase
@@ -525,7 +525,7 @@ retry_with_backoff() {
                 echo "$stderr_content" >&2
             fi
             rm -f "$stderr_file" "$stdout_file" 2>/dev/null
-            return $exit_code
+            return "$exit_code"
         fi
 
         # Retryable error - will loop and retry (unless this was last attempt)
@@ -551,7 +551,7 @@ retry_with_backoff() {
     LAST_ERROR_OUTPUT=$(cat "$stderr_file" 2>/dev/null | head -c "$ERROR_OUTPUT_MAX_LENGTH" || echo "")
 
     rm -f "$stderr_file" "$stdout_file" 2>/dev/null
-    return $exit_code
+    return "$exit_code"
 }
 
 # Wrapper that combines retry with step tracking
@@ -575,25 +575,22 @@ try_step_with_backoff() {
         log_detail "$description..."
     fi
 
-    # Use retry_with_backoff
     local exit_code=0
-    local output
-    output=$(retry_with_backoff "$description" "$@" 2>&1) || exit_code=$?
-
-    if [[ $exit_code -eq 0 ]]; then
+    if retry_with_backoff "$description" "$@"; then
         # Success
         LAST_ERROR=""
         LAST_ERROR_CODE=0
         LAST_ERROR_OUTPUT=""
         return 0
     fi
+    exit_code=$?
 
     # Failure - error context already set by retry_with_backoff
     if type -t state_phase_fail &>/dev/null; then
         state_phase_fail "$CURRENT_PHASE" "$description" "$LAST_ERROR"
     fi
 
-    return $exit_code
+    return "$exit_code"
 }
 
 # Fetch URL with automatic retry for transient errors

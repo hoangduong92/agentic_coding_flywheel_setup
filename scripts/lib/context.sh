@@ -133,7 +133,7 @@ try_step() {
     # Create temp file for capturing output
     local temp_output
     temp_output=$(mktemp)
-    trap "rm -f '$temp_output'" RETURN
+    trap 'rm -f "$temp_output"' RETURN
 
     # Execute command, capturing both stdout and stderr
     local exit_code=0
@@ -174,7 +174,7 @@ try_step_eval() {
     # Create temp file for capturing output
     local temp_output
     temp_output=$(mktemp)
-    trap "rm -f '$temp_output'" RETURN
+    trap 'rm -f "$temp_output"' RETURN
 
     # Execute command string via bash -c
     local exit_code=0

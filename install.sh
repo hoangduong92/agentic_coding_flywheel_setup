@@ -138,6 +138,9 @@ _source_reliability_libs() {
         return 0
     fi
 
+    local loaded_state=false
+    local loaded_report=false
+
     # Try local files first (when running from repo)
     if [[ -n "${SCRIPT_DIR:-}" ]]; then
         local state_lib="$SCRIPT_DIR/scripts/lib/state.sh"
@@ -145,45 +148,62 @@ _source_reliability_libs() {
 
         if [[ -f "$state_lib" ]]; then
             # shellcheck source=scripts/lib/state.sh
-            source "$state_lib"
+            source "$state_lib" && loaded_state=true
         fi
 
         if [[ -f "$report_lib" ]]; then
             # shellcheck source=scripts/lib/report.sh
-            source "$report_lib"
+            source "$report_lib" && loaded_report=true
         fi
-
-        export ACFS_RELIABILITY_LOADED=1
-        return 0
     fi
 
-    # Download for curl|bash scenario (if curl available)
-    if command -v curl &>/dev/null; then
-        local tmp_state="/tmp/acfs-state-$$.sh"
-        local tmp_report="/tmp/acfs-report-$$.sh"
+    # If local files weren't loaded, try downloading (curl|bash scenario)
+    if [[ "$loaded_state" != "true" || "$loaded_report" != "true" ]]; then
+        if command -v curl &>/dev/null; then
+            local tmp_state="/tmp/acfs-state-$$.sh"
+            local tmp_report="/tmp/acfs-report-$$.sh"
 
-        if curl -fsSL "$ACFS_RAW/scripts/lib/state.sh" -o "$tmp_state" 2>/dev/null; then
-            source "$tmp_state"
-            rm -f "$tmp_state"
+            if [[ "$loaded_state" != "true" ]]; then
+                if curl -fsSL "$ACFS_RAW/scripts/lib/state.sh" -o "$tmp_state" 2>/dev/null; then
+                    source "$tmp_state" && loaded_state=true
+                    rm -f "$tmp_state"
+                fi
+            fi
+
+            if [[ "$loaded_report" != "true" ]]; then
+                if curl -fsSL "$ACFS_RAW/scripts/lib/report.sh" -o "$tmp_report" 2>/dev/null; then
+                    source "$tmp_report" && loaded_report=true
+                    rm -f "$tmp_report"
+                fi
+            fi
         fi
-
-        if curl -fsSL "$ACFS_RAW/scripts/lib/report.sh" -o "$tmp_report" 2>/dev/null; then
-            source "$tmp_report"
-            rm -f "$tmp_report"
-        fi
-
-        export ACFS_RELIABILITY_LOADED=1
-        return 0
     fi
 
-    # Fallback: define minimal no-op stubs
-    state_init() { :; }
-    state_phase_start() { :; }
-    state_phase_complete() { :; }
-    state_phase_fail() { :; }
-    confirm_resume() { return 1; }  # Fresh install
-    report_failure() { echo "Installation failed" >&2; }
-    report_success() { echo "Installation complete" >&2; }
+    # Define fallback stubs for any functions that weren't loaded
+    # This ensures the installer works even if libs fail to load
+    if ! type -t state_init &>/dev/null; then
+        state_init() { :; }
+    fi
+    if ! type -t state_phase_start &>/dev/null; then
+        state_phase_start() { :; }
+    fi
+    if ! type -t state_phase_complete &>/dev/null; then
+        state_phase_complete() { :; }
+    fi
+    if ! type -t state_phase_fail &>/dev/null; then
+        state_phase_fail() { :; }
+    fi
+    if ! type -t confirm_resume &>/dev/null; then
+        confirm_resume() { return 1; }  # Fresh install
+    fi
+    if ! type -t report_failure &>/dev/null; then
+        report_failure() { echo "Installation failed" >&2; }
+    fi
+    if ! type -t report_success &>/dev/null; then
+        report_success() { echo "Installation complete" >&2; }
+    fi
+
+    export ACFS_RELIABILITY_LOADED=1
     return 0
 }
 _source_reliability_libs
@@ -1074,15 +1094,15 @@ acfs_load_upstream_checksums() {
     local required_tools=(
         atuin bun bv caam cass claude cm mcp_agent_mail ntm ohmyzsh rust slb ubs uv zoxide
     )
-    local missing=false
+    local missing_required_tools=false
     local tool
     for tool in "${required_tools[@]}"; do
         if [[ -z "${ACFS_UPSTREAM_URLS[$tool]:-}" ]] || [[ -z "${ACFS_UPSTREAM_SHA256[$tool]:-}" ]]; then
             log_error "checksums.yaml missing entry for '$tool'"
-            missing=true
+            missing_required_tools=true
         fi
     done
-    if [[ "$missing" == "true" ]]; then
+    if [[ "$missing_required_tools" == "true" ]]; then
         return 1
     fi
 

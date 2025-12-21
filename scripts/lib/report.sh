@@ -43,7 +43,6 @@ draw_box() {
     shift
     local lines=("$@")
     local width=60
-    local padding=2
 
     # Top border
     echo -n "+"
@@ -175,12 +174,18 @@ report_failure_plain() {
     if [[ -n "$error_output" && "$error_output" != "$error" ]]; then
         echo ""
         echo -e "${REPORT_GRAY}Output:${REPORT_NC}"
-        echo "$error_output" | sed 's/^/  /'
+        while IFS= read -r line; do
+            echo "  $line"
+        done <<< "$error_output"
     fi
 
     echo ""
     echo -e "${REPORT_BOLD}Suggested Fix:${REPORT_NC}"
-    echo -e "$suggested_fix" | sed 's/^/  /'
+    local rendered_fix
+    rendered_fix="$(printf '%b' "$suggested_fix")"
+    while IFS= read -r line; do
+        echo "  $line"
+    done <<< "$rendered_fix"
 
     echo ""
     echo -e "${REPORT_BOLD}To Resume:${REPORT_NC}"
