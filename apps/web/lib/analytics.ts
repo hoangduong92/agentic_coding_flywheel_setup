@@ -101,6 +101,7 @@ export type WizardStep =
   | 'install_terminal'
   | 'generate_ssh_key'
   | 'ssh_connect'
+  | 'accounts'
   | 'preflight_check'
   | 'reconnect_ubuntu'
   | 'run_installer'
