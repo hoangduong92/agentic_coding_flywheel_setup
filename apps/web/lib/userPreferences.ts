@@ -94,23 +94,22 @@ export function isValidIP(ip: string): boolean {
  * Uses SSR-safe localStorage loading + an explicit `loaded` flag.
  */
 export function useUserOS(): [OperatingSystem | null, (os: OperatingSystem) => void, boolean] {
-  const [os, setOSState] = useState<OperatingSystem | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [userOSState, setUserOSState] = useState<{
+    os: OperatingSystem | null;
+    loaded: boolean;
+  }>({ os: null, loaded: false });
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
-    setOSState(getUserOS());
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
-    setLoaded(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage access must happen after mount (SSR-safe)
+    setUserOSState({ os: getUserOS(), loaded: true });
   }, []);
 
   const setOS = useCallback((newOS: OperatingSystem) => {
     setUserOS(newOS);
-    setOSState(newOS);
-    setLoaded(true);
+    setUserOSState({ os: newOS, loaded: true });
   }, []);
 
-  return [os, setOS, loaded];
+  return [userOSState.os, setOS, userOSState.loaded];
 }
 
 /**
@@ -118,24 +117,23 @@ export function useUserOS(): [OperatingSystem | null, (os: OperatingSystem) => v
  * Uses SSR-safe localStorage loading + an explicit `loaded` flag.
  */
 export function useVPSIP(): [string | null, (ip: string) => void, boolean] {
-  const [ip, setIPState] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [vpsIPState, setVpsIPState] = useState<{
+    ip: string | null;
+    loaded: boolean;
+  }>({ ip: null, loaded: false });
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
-    setIPState(getVPSIP());
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
-    setLoaded(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage access must happen after mount (SSR-safe)
+    setVpsIPState({ ip: getVPSIP(), loaded: true });
   }, []);
 
   const setIP = useCallback((newIP: string) => {
     if (setVPSIP(newIP)) {
-      setIPState(newIP);
-      setLoaded(true);
+      setVpsIPState({ ip: newIP, loaded: true });
     }
   }, []);
 
-  return [ip, setIP, loaded];
+  return [vpsIPState.ip, setIP, vpsIPState.loaded];
 }
 
 /**
