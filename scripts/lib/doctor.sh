@@ -324,6 +324,7 @@ check_core_tools() {
     check_command "tool.go" "Go" "go" "sudo apt install golang-go"
     check_command "tool.tmux" "tmux" "tmux" "sudo apt install tmux"
     check_command "tool.rg" "ripgrep" "rg" "sudo apt install ripgrep"
+    check_command "tool.gh" "GitHub CLI (gh)" "gh" "sudo apt-get install -y gh"
     check_command "tool.sg" "ast-grep" "sg" "cargo install ast-grep"
 
     blank_line

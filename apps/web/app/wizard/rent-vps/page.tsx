@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Check, Server, ChevronDown, Cloud } from "lucide-react";
+import { ExternalLink, Check, Server, ChevronDown, Cloud, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertCard } from "@/components/alert-card";
 import { cn } from "@/lib/utils";
@@ -221,6 +221,30 @@ export default function RentVPSPage() {
               onToggle={() => handleToggleProvider(provider.id)}
             />
           ))}
+        </div>
+      </div>
+
+      {/* Honest disclaimer */}
+      <div className="relative overflow-hidden rounded-xl border border-[oklch(0.6_0.02_260/0.3)] bg-gradient-to-br from-[oklch(0.15_0.01_260)] to-[oklch(0.12_0.015_280)] p-3 sm:p-4">
+        {/* Subtle decorative element */}
+        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[oklch(0.5_0.03_260/0.15)] blur-2xl" />
+
+        <div className="relative flex gap-2.5 sm:gap-3">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[oklch(0.65_0.18_350/0.15)] sm:h-8 sm:w-8">
+            <Heart className="h-3.5 w-3.5 text-[oklch(0.75_0.15_350)] sm:h-4 sm:w-4" />
+          </div>
+          <div className="min-w-0 space-y-1 sm:space-y-1.5">
+            <p className="text-[13px] font-medium leading-tight text-[oklch(0.85_0.02_260)] sm:text-sm">
+              No affiliate deals, just honest recommendations
+            </p>
+            <p className="text-[13px] leading-relaxed text-[oklch(0.65_0.02_260)] sm:text-sm">
+              I&apos;m Jeffrey Emanuel, and I have <span className="font-medium text-[oklch(0.75_0.02_260)]">zero financial relationship</span> with
+              Contabo, OVH, or any cloud provider. No affiliate links, no kickbacks, no sponsored content.
+              I recommend these because I use them myself—they offer beefy machines (32GB+ RAM) at
+              a fraction of what AWS, GCP, or Azure charge. On those big providers, equivalent specs
+              would cost <span className="font-medium text-[oklch(0.75_0.02_260)]">3-5× more</span>.
+            </p>
+          </div>
         </div>
       </div>
 

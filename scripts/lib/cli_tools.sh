@@ -26,6 +26,7 @@ APT_CLI_TOOLS=(
     neovim          # better vim
     direnv          # directory-specific env vars
     jq              # JSON processor
+    gh              # GitHub CLI (auth, issues, PRs)
     htop            # process viewer (fallback for btop)
 )
 

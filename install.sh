@@ -662,6 +662,38 @@ EOF
 # ============================================================
 # Phase 4: CLI tools
 # ============================================================
+install_github_cli() {
+    # GitHub CLI (gh) is a core tool for ACFS workflows (PRs, auth, issues).
+    # Prefer distro apt; fall back to the official GitHub CLI apt repo if needed.
+
+    if command_exists gh; then
+        return 0
+    fi
+
+    log_detail "Installing GitHub CLI (gh)"
+
+    # First try default apt repos (often available on Ubuntu 24.04+/25.x).
+    if $SUDO apt-get install -y gh >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # Fallback: add official GitHub CLI apt repo and retry.
+    log_detail "gh not available in default apt repos; adding GitHub CLI apt repo"
+
+    $SUDO mkdir -p /etc/apt/keyrings
+    if ! acfs_curl https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
+        $SUDO dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg status=none 2>/dev/null; then
+        return 1
+    fi
+    $SUDO chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg 2>/dev/null || true
+
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | \
+        $SUDO tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+
+    $SUDO apt-get update -y >/dev/null 2>&1 || true
+    $SUDO apt-get install -y gh >/dev/null 2>&1
+}
+
 install_cli_tools() {
     log_step "4/9" "Installing CLI tools..."
 
@@ -684,7 +716,18 @@ install_cli_tools() {
     fi
 
     log_detail "Installing required apt packages"
-    $SUDO apt-get install -y ripgrep tmux fzf direnv
+    $SUDO apt-get install -y ripgrep tmux fzf direnv jq
+
+    # GitHub CLI (gh)
+    if command_exists gh; then
+        log_detail "gh already installed ($(gh --version 2>/dev/null | head -1 || echo 'gh'))"
+    else
+        if install_github_cli; then
+            log_success "gh installed"
+        else
+            log_fatal "Failed to install GitHub CLI (gh)"
+        fi
+    fi
 
     log_detail "Installing optional apt packages"
     $SUDO apt-get install -y \
