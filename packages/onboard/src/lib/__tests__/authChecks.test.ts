@@ -97,7 +97,7 @@ describe('authChecks', () => {
   });
 
   test('checkSupabase returns authenticated with access token file', () => {
-    const tokenPath = path.join(HOME, '.config', 'supabase', 'access-token');
+    const tokenPath = path.join(HOME, '.supabase', 'access-token');
     const checks = createAuthChecks(
       makeDeps({
         existsSync: (filePath) => filePath === tokenPath,
@@ -106,6 +106,16 @@ describe('authChecks', () => {
     );
 
     expect(checks.checkSupabase()).toEqual({ authenticated: true });
+  });
+
+  test('checkSupabase uses SUPABASE_ACCESS_TOKEN when set', () => {
+    const checks = createAuthChecks(
+      makeDeps({
+        env: { SUPABASE_ACCESS_TOKEN: 'token' } as NodeJS.ProcessEnv,
+      }),
+    );
+
+    expect(checks.checkSupabase()).toEqual({ authenticated: true, details: 'via SUPABASE_ACCESS_TOKEN' });
   });
 
   test('checkWrangler reads email from whoami output', () => {

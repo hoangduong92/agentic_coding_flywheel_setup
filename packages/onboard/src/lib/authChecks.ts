@@ -178,8 +178,14 @@ export function createAuthChecks(overrides: Partial<AuthCheckDeps> = {}) {
       }
     }
 
-    const authPath = path.join(homedir, '.config', 'vercel', 'auth.json');
-    if (deps.existsSync(authPath)) {
+    const authPaths = [
+      path.join(homedir, '.config', 'vercel', 'auth.json'),
+      path.join(homedir, '.vercel', 'auth.json'),
+    ];
+    for (const authPath of authPaths) {
+      if (!deps.existsSync(authPath)) {
+        continue;
+      }
       const auth = safeReadJson<{ token?: string; user?: { email?: string } }>(deps.readFileSync, authPath);
       if (auth?.user?.email) {
         return { authenticated: true, details: auth.user.email };
@@ -193,8 +199,18 @@ export function createAuthChecks(overrides: Partial<AuthCheckDeps> = {}) {
   };
 
   const checkSupabase = (): AuthStatus => {
-    const tokenPath = path.join(homedir, '.config', 'supabase', 'access-token');
-    if (deps.existsSync(tokenPath)) {
+    if (deps.env.SUPABASE_ACCESS_TOKEN) {
+      return { authenticated: true, details: 'via SUPABASE_ACCESS_TOKEN' };
+    }
+
+    const tokenPaths = [
+      path.join(homedir, '.supabase', 'access-token'),
+      path.join(homedir, '.config', 'supabase', 'access-token'),
+    ];
+    for (const tokenPath of tokenPaths) {
+      if (!deps.existsSync(tokenPath)) {
+        continue;
+      }
       try {
         const token = deps.readFileSync(tokenPath, 'utf-8').trim();
         return token ? { authenticated: true } : { authenticated: false };
@@ -212,11 +228,13 @@ export function createAuthChecks(overrides: Partial<AuthCheckDeps> = {}) {
   const checkWrangler = (): AuthStatus => {
     if (deps.commandExists('wrangler')) {
       const output = runCommand('wrangler whoami');
-      if (output && !output.toLowerCase().includes('not authenticated')) {
-        const match = output.match(/email:\s*([^\s]+)/i);
-        return { authenticated: true, details: match?.[1] };
+      if (output) {
+        if (!output.toLowerCase().includes('not authenticated')) {
+          const match = output.match(/email:\s*([^\s]+)/i);
+          return { authenticated: true, details: match?.[1] };
+        }
+        return { authenticated: false };
       }
-      return { authenticated: false };
     }
 
     const configPaths = [
