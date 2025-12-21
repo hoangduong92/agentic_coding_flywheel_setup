@@ -300,10 +300,28 @@ function WorkflowSection() {
 function PromptCard({ prompt, index }: { prompt: AgentPrompt; index: number }) {
   const [copied, setCopied] = useState(false);
 
-  const copyPrompt = () => {
-    navigator.clipboard.writeText(prompt.prompt);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(prompt.prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers or when clipboard permission is denied
+      const textArea = document.createElement("textarea");
+      textArea.value = prompt.prompt;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand("copy");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        // Silent fail - user can manually copy
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   const categoryColors: Record<string, string> = {
