@@ -324,7 +324,7 @@ ubuntu_preflight_checks() {
 # Check sufficient disk space for upgrade
 ubuntu_check_disk_space() {
     local available_mb
-    available_mb=$(df -m / | awk 'NR==2 {print $4}')
+    available_mb=$(df -mP / | awk 'NR==2 {print $4}')
 
     if [[ "$available_mb" -lt "$UBUNTU_UPGRADE_MIN_DISK_MB" ]]; then
         log_error "Insufficient disk space: ${available_mb}MB available, need ${UBUNTU_UPGRADE_MIN_DISK_MB}MB"
@@ -1166,7 +1166,7 @@ ubuntu_recover_failed_upgrade() {
 
     # Check disk space
     local available_mb
-    available_mb=$(df -m / | awk 'NR==2 {print $4}')
+    available_mb=$(df -mP / | awk 'NR==2 {print $4}')
     if [[ "$available_mb" -lt 1000 ]]; then
         ubuntu_emergency_cleanup
     fi
