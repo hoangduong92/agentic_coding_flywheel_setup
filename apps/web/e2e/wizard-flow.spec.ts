@@ -908,17 +908,17 @@ test.describe("Step 10: Launch Onboarding Page", () => {
     await page.goto("/wizard/launch-onboarding");
     await expect(page.locator("h1").first()).toBeVisible({ timeout: TIMEOUTS.PAGE_LOAD });
 
-    // The main action should be about starting onboarding, not "Continue" or "Next"
-    // (This is the last step, so there shouldn't be a standard next navigation)
-    const continueButton = page.locator('button:has-text("Continue")');
-    const nextButton = page.locator('button:has-text("Next")');
+    // This is the final step of the wizard - it should have a "Continue to Part Two" CTA
+    // but should NOT have a standard wizard "Next" navigation button
+    const continueToPartTwoButton = page.locator('button:has-text("Continue to Part Two")');
+    const nextStepButton = page.locator('button:has-text("Next Step")');
 
-    // These should either not exist or be disabled
-    const continueCount = await continueButton.count();
-    const nextCount = await nextButton.count();
+    // Should have the Part Two CTA
+    await expect(continueToPartTwoButton).toBeVisible();
 
-    // At least one should be absent or we're testing the step indicator
-    expect(continueCount === 0 || nextCount === 0).toBeTruthy();
+    // Should NOT have a standard "Next Step" navigation (this is the final step)
+    const nextStepCount = await nextStepButton.count();
+    expect(nextStepCount).toBe(0);
   });
 
   test("should show celebration/success messaging", async ({ page }) => {
