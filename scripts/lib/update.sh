@@ -1262,6 +1262,11 @@ main() {
         fi
     fi
 
+    # Set non-interactive mode if --yes was passed
+    if [[ "$YES_MODE" == "true" ]]; then
+        export ACFS_INTERACTIVE=false
+    fi
+
     # Run updates
     update_apt
     update_bun

@@ -543,7 +543,7 @@ handle_all_checksum_mismatches() {
     fi
 
     # Non-interactive mode handling
-    if [[ "${ACFS_INTERACTIVE:-true}" == "false" ]]; then
+    if ! _acfs_is_interactive; then
         _handle_mismatches_noninteractive
         return $?
     fi
@@ -744,7 +744,7 @@ handle_checksum_mismatch() {
     fi
 
     # Non-interactive mode
-    if [[ "${ACFS_INTERACTIVE:-true}" == "false" ]]; then
+    if ! _acfs_is_interactive; then
         if [[ "$is_critical" == "true" ]]; then
             echo -e "${RED}CRITICAL tool $tool has checksum mismatch - aborting${NC}" >&2
             return 1  # Abort
