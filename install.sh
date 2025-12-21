@@ -347,11 +347,10 @@ run_preflight_checks() {
         fi
     fi
 
-    # Run preflight checks (quiet mode, just check exit code)
+    # Run preflight checks and capture exit code correctly
+    # (can't use "if ! cmd; then exit_code=$?" because $? would be 0 from the negation)
     local exit_code=0
-    if ! bash "$preflight_script" 2>&1; then
-        exit_code=$?
-    fi
+    bash "$preflight_script" || exit_code=$?
 
     if [[ $exit_code -ne 0 ]]; then
         echo "" >&2

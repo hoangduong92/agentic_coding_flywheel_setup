@@ -1026,10 +1026,10 @@ run_phase() {
     local start_time
     start_time=$(date +%s)
 
+    # Execute and capture exit code correctly
+    # (can't use "if ! cmd; then exit_code=$?" because $? would be 0 from the negation)
     local exit_code=0
-    if ! "$phase_func" "$@"; then
-        exit_code=$?
-    fi
+    "$phase_func" "$@" || exit_code=$?
 
     local end_time
     end_time=$(date +%s)
