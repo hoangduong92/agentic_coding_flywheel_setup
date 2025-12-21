@@ -24,13 +24,16 @@ VERSION="0.1.0"
 
 # Source gum_ui library if available for consistent theming
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -f "$SCRIPT_DIR/../../scripts/lib/gum_ui.sh" ]]; then
-    # shellcheck disable=SC1091
-    source "$SCRIPT_DIR/../../scripts/lib/gum_ui.sh"
-elif [[ -f "$HOME/.acfs/scripts/lib/gum_ui.sh" ]]; then
-    # shellcheck disable=SC1091
-    source "$HOME/.acfs/scripts/lib/gum_ui.sh"
-fi
+for candidate in \
+    "$SCRIPT_DIR/../scripts/lib/gum_ui.sh" \
+    "$SCRIPT_DIR/../../scripts/lib/gum_ui.sh" \
+    "$HOME/.acfs/scripts/lib/gum_ui.sh"; do
+    if [[ -f "$candidate" ]]; then
+        # shellcheck disable=SC1091
+        source "$candidate"
+        break
+    fi
+done
 
 # Lesson titles (indexed 0-7)
 declare -a LESSON_TITLES=(

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CommandCard } from "@/components/command-card";
 import { OutputPreview } from "@/components/alert-card";
 import { markStepComplete } from "@/lib/wizardSteps";
-import { useVPSIP, useMounted } from "@/lib/userPreferences";
+import { useVPSIP } from "@/lib/userPreferences";
 import {
   SimplerGuide,
   GuideSection,
@@ -19,9 +19,9 @@ import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 
 export default function ReconnectUbuntuPage() {
   const router = useRouter();
-  const [vpsIP] = useVPSIP();
+  const [vpsIP, , vpsIPLoaded] = useVPSIP();
   const [isNavigating, setIsNavigating] = useState(false);
-  const mounted = useMounted();
+  const ready = vpsIPLoaded;
 
   // Analytics tracking for this wizard step
   const { markComplete } = useWizardAnalytics({
@@ -32,10 +32,11 @@ export default function ReconnectUbuntuPage() {
 
   // Redirect if no VPS IP (after hydration)
   useEffect(() => {
-    if (mounted && vpsIP === null) {
+    if (!ready) return;
+    if (vpsIP === null) {
       router.push("/wizard/create-vps");
     }
-  }, [mounted, vpsIP, router]);
+  }, [ready, vpsIP, router]);
 
   const handleContinue = useCallback(() => {
     markComplete();
@@ -51,7 +52,7 @@ export default function ReconnectUbuntuPage() {
     router.push("/wizard/status-check");
   }, [router, markComplete]);
 
-  if (!mounted || !vpsIP) {
+  if (!ready || !vpsIP) {
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />

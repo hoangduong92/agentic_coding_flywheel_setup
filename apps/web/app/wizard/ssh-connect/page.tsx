@@ -9,7 +9,7 @@ import { AlertCard, OutputPreview } from "@/components/alert-card";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
-import { useVPSIP, useUserOS, useMounted } from "@/lib/userPreferences";
+import { useVPSIP, useUserOS } from "@/lib/userPreferences";
 import {
   SimplerGuide,
   GuideSection,
@@ -129,11 +129,11 @@ function TroubleshootingSection({
 
 export default function SSHConnectPage() {
   const router = useRouter();
-  const [vpsIP] = useVPSIP();
-  const [os] = useUserOS();
+  const [vpsIP, , vpsIPLoaded] = useVPSIP();
+  const [os, , osLoaded] = useUserOS();
   const [expandedError, setExpandedError] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
-  const mounted = useMounted();
+  const ready = vpsIPLoaded && osLoaded;
 
   // Analytics tracking for this wizard step
   const { markComplete } = useWizardAnalytics({
@@ -144,14 +144,13 @@ export default function SSHConnectPage() {
 
   // Redirect if missing required data (after hydration)
   useEffect(() => {
-    if (mounted) {
-      if (vpsIP === null) {
-        router.push("/wizard/create-vps");
-      } else if (os === null) {
-        router.push("/wizard/os-selection");
-      }
+    if (!ready) return;
+    if (vpsIP === null) {
+      router.push("/wizard/create-vps");
+    } else if (os === null) {
+      router.push("/wizard/os-selection");
     }
-  }, [mounted, vpsIP, os, router]);
+  }, [ready, vpsIP, os, router]);
 
   const handleContinue = useCallback(() => {
     markComplete();
@@ -160,7 +159,7 @@ export default function SSHConnectPage() {
     router.push("/wizard/run-installer");
   }, [router, markComplete]);
 
-  if (!mounted || !vpsIP || !os) {
+  if (!ready || !vpsIP || !os) {
     return (
       <div className="flex items-center justify-center py-12">
         <Terminal className="h-8 w-8 animate-pulse text-muted-foreground" />

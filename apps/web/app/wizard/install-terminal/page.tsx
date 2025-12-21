@@ -9,7 +9,7 @@ import { AlertCard } from "@/components/alert-card";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
-import { useUserOS, useMounted } from "@/lib/userPreferences";
+import { useUserOS } from "@/lib/userPreferences";
 import {
   SimplerGuide,
   GuideSection,
@@ -305,9 +305,9 @@ function WindowsContent() {
 
 export default function InstallTerminalPage() {
   const router = useRouter();
-  const [os] = useUserOS();
+  const [os, , osLoaded] = useUserOS();
   const [isNavigating, setIsNavigating] = useState(false);
-  const mounted = useMounted();
+  const ready = osLoaded;
 
   // Analytics tracking for this wizard step
   const { markComplete } = useWizardAnalytics({
@@ -318,10 +318,11 @@ export default function InstallTerminalPage() {
 
   // Redirect if no OS selected (after hydration)
   useEffect(() => {
-    if (mounted && os === null) {
+    if (!ready) return;
+    if (os === null) {
       router.push("/wizard/os-selection");
     }
-  }, [mounted, os, router]);
+  }, [ready, os, router]);
 
   const handleContinue = useCallback(() => {
     markComplete({ selected_os: os });
@@ -331,7 +332,7 @@ export default function InstallTerminalPage() {
   }, [router, os, markComplete]);
 
   // Show loading state while detecting OS or during SSR
-  if (!mounted || !os) {
+  if (!ready || !os) {
     return (
       <div className="flex items-center justify-center py-12">
         <Terminal className="h-8 w-8 animate-pulse text-muted-foreground" />

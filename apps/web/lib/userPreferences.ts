@@ -6,7 +6,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { safeGetItem, safeSetItem } from "./utils";
 
 export type OperatingSystem = "mac" | "windows";
@@ -86,54 +86,56 @@ export function isValidIP(ip: string): boolean {
 }
 
 // --- React Hooks for User Preferences ---
-// Using lazy state initialization instead of TanStack Query for reliable synchronous access
-// This avoids race conditions where redirects happen before async queries/effects resolve
+// Using local state + effects for SSR-safe localStorage access.
+// Also provides a `loaded` boolean so callers can avoid redirect races.
 
 /**
  * Hook to get and set the user's operating system.
- * Uses lazy state initialization for synchronous localStorage access on first render.
- * This avoids race conditions where redirects fire before async effects complete.
+ * Uses SSR-safe localStorage loading + an explicit `loaded` flag.
  */
-export function useUserOS(): [OperatingSystem | null, (os: OperatingSystem) => void] {
-  // Lazy initialization reads localStorage synchronously on first client render
-  // Returns null on server (SSR-safe), actual value on client
-  const [os, setOSState] = useState<OperatingSystem | null>(() => {
-    if (typeof window !== "undefined") {
-      return getUserOS();
-    }
-    return null;
-  });
+export function useUserOS(): [OperatingSystem | null, (os: OperatingSystem) => void, boolean] {
+  const [os, setOSState] = useState<OperatingSystem | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
+    setOSState(getUserOS());
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
+    setLoaded(true);
+  }, []);
 
   const setOS = useCallback((newOS: OperatingSystem) => {
     setUserOS(newOS);
     setOSState(newOS);
+    setLoaded(true);
   }, []);
 
-  return [os, setOS];
+  return [os, setOS, loaded];
 }
 
 /**
  * Hook to get and set the VPS IP address.
- * Uses lazy state initialization for synchronous localStorage access on first render.
- * This avoids race conditions where redirects fire before async effects complete.
+ * Uses SSR-safe localStorage loading + an explicit `loaded` flag.
  */
-export function useVPSIP(): [string | null, (ip: string) => void] {
-  // Lazy initialization reads localStorage synchronously on first client render
-  // Returns null on server (SSR-safe), actual value on client
-  const [ip, setIPState] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return getVPSIP();
-    }
-    return null;
-  });
+export function useVPSIP(): [string | null, (ip: string) => void, boolean] {
+  const [ip, setIPState] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
+    setIPState(getVPSIP());
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
+    setLoaded(true);
+  }, []);
 
   const setIP = useCallback((newIP: string) => {
     if (setVPSIP(newIP)) {
       setIPState(newIP);
+      setLoaded(true);
     }
   }, []);
 
-  return [ip, setIP];
+  return [ip, setIP, loaded];
 }
 
 /**
@@ -154,17 +156,14 @@ export function useDetectedOS(): OperatingSystem | null {
 /**
  * Hook to track if the component is mounted (client-side hydrated).
  * Returns true on client, false on server.
- *
- * Uses lazy state initialization for immediate detection on client.
- * This avoids a flash of loading state on pages that check mounted status.
- *
- * Note: This intentionally causes a hydration mismatch (server: false, client: true)
- * which React handles gracefully. This is the standard pattern for client-only content.
  */
 export function useMounted(): boolean {
-  // Lazy initialization: returns true on client, false on server
-  // This allows immediate content rendering without waiting for useEffect
-  const [mounted] = useState(() => typeof window !== "undefined");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration detection
+    setMounted(true);
+  }, []);
 
   return mounted;
 }

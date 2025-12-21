@@ -8,7 +8,7 @@ import { CommandCard } from "@/components/command-card";
 import { AlertCard, DetailsSection } from "@/components/alert-card";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
-import { useUserOS, useMounted } from "@/lib/userPreferences";
+import { useUserOS } from "@/lib/userPreferences";
 import {
   SimplerGuide,
   GuideSection,
@@ -20,9 +20,9 @@ import {
 
 export default function GenerateSSHKeyPage() {
   const router = useRouter();
-  const [os] = useUserOS();
+  const [os, , osLoaded] = useUserOS();
   const [isNavigating, setIsNavigating] = useState(false);
-  const mounted = useMounted();
+  const ready = osLoaded;
 
   // Analytics tracking for this wizard step
   const { markComplete } = useWizardAnalytics({
@@ -33,10 +33,11 @@ export default function GenerateSSHKeyPage() {
 
   // Redirect if no OS selected (after hydration)
   useEffect(() => {
-    if (mounted && os === null) {
+    if (!ready) return;
+    if (os === null) {
       router.push("/wizard/os-selection");
     }
-  }, [mounted, os, router]);
+  }, [ready, os, router]);
 
   const handleContinue = useCallback(() => {
     markComplete();
@@ -45,7 +46,7 @@ export default function GenerateSSHKeyPage() {
     router.push("/wizard/rent-vps");
   }, [router, markComplete]);
 
-  if (!mounted || !os) {
+  if (!ready || !os) {
     return (
       <div className="flex items-center justify-center py-12">
         <Key className="h-8 w-8 animate-pulse text-muted-foreground" />

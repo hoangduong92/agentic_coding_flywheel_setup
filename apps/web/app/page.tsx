@@ -13,6 +13,8 @@ import {
   Clock,
   Sparkles,
   ChevronRight,
+  Heart,
+  MessageCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -377,6 +379,103 @@ function WorkflowStepsSection() {
   );
 }
 
+function AboutSection() {
+  const { ref, isInView } = useScrollReveal({ threshold: 0.1 });
+
+  return (
+    <section ref={ref as React.RefObject<HTMLElement>} className="border-t border-border/30 py-24">
+      <div className="mx-auto max-w-4xl px-6">
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={springs.smooth}
+        >
+          <div className="mb-6 flex items-center justify-center gap-3">
+            <div className="h-px w-8 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-primary">About</span>
+            <div className="h-px w-8 bg-gradient-to-l from-transparent via-primary/50 to-transparent" />
+          </div>
+
+          <h2 className="mb-6 font-mono text-3xl font-bold tracking-tight">
+            Who Made This? Why Is It Free?
+          </h2>
+        </motion.div>
+
+        <motion.div
+          className="space-y-6 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ ...springs.smooth, delay: 0.1 }}
+        >
+          <div className="mx-auto flex items-center justify-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
+              <Heart className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+
+          <div className="space-y-4 text-muted-foreground leading-relaxed">
+            <p>
+              I&apos;m{" "}
+              <a
+                href="https://x.com/doodlestein"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary hover:underline"
+              >
+                Jeffrey Emanuel
+              </a>
+              , and I built this because I was being inundated with requests from friends,
+              older relatives, and strangers on the internet asking me to help them get started
+              with using AI for software development.
+            </p>
+
+            <p>
+              I wanted <strong className="text-foreground">one resource</strong> I could point
+              people to that would help them &quot;from soup to nuts&quot; in getting set up —
+              even if they have almost no computer expertise. Just motivation and desire.
+            </p>
+
+            <p>
+              This is also a platform to share my suite of{" "}
+              <strong className="text-foreground">totally free, open-source agentic coding tools</strong>.
+              I originally built these for myself to move faster in my consulting work with
+              Private Equity and Hedge Funds. Now I want to help others be more productive
+              and creative too.
+            </p>
+          </div>
+
+          <motion.div
+            className="flex flex-wrap items-center justify-center gap-4 pt-4"
+            initial={{ opacity: 0 }}
+            animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ ...springs.smooth, delay: 0.3 }}
+          >
+            <a
+              href="https://x.com/doodlestein"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-card/50 px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Follow me on X
+            </a>
+            <a
+              href="https://github.com/Dicklesworthstone"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-card/50 px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+            >
+              <GitBranch className="h-4 w-4" />
+              View my projects
+            </a>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function StatBadge({ value, label }: { value: string; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1 px-4">
@@ -556,6 +655,9 @@ export default function HomePage() {
 
         {/* Workflow Steps Preview */}
         <WorkflowStepsSection />
+
+        {/* About Section */}
+        <AboutSection />
 
         {/* Footer */}
         <footer className="border-t border-border/30 py-12">
