@@ -638,6 +638,117 @@ verify_all_installers() {
     fi
 }
 
+# Verify all known installers and output as JSON
+# Usage: verify_all_installers_json
+# Output: JSON object with matches, mismatches, and errors arrays
+verify_all_installers_json() {
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    # Arrays to collect results
+    local matches=()
+    local mismatches=()
+    local errors=()
+    local skipped=()
+    local total=0
+
+    for name in "${!KNOWN_INSTALLERS[@]}"; do
+        local url="${KNOWN_INSTALLERS[$name]}"
+        local expected="${LOADED_CHECKSUMS[$name]:-}"
+        ((total += 1))
+
+        if [[ -z "$expected" ]]; then
+            skipped+=("{\"name\":\"$name\",\"reason\":\"no checksum recorded\"}")
+            continue
+        fi
+
+        local actual
+        local fetch_error=""
+        actual=$(fetch_checksum "$url" 2>&1) || fetch_error="$actual"
+
+        if [[ -n "$fetch_error" ]]; then
+            # Escape special characters in error message for JSON
+            fetch_error="${fetch_error//\\/\\\\}"
+            fetch_error="${fetch_error//\"/\\\"}"
+            fetch_error="${fetch_error//$'\n'/\\n}"
+            errors+=("{\"name\":\"$name\",\"url\":\"$url\",\"error\":\"$fetch_error\"}")
+        elif [[ "$actual" == "$expected" ]]; then
+            matches+=("{\"name\":\"$name\",\"checksum\":\"$expected\"}")
+        else
+            mismatches+=("{\"name\":\"$name\",\"url\":\"$url\",\"expected\":\"$expected\",\"actual\":\"$actual\"}")
+        fi
+    done
+
+    # Build JSON output
+    echo "{"
+    echo "  \"timestamp\": \"$timestamp\","
+    echo "  \"total\": $total,"
+
+    # Matches array
+    echo "  \"matches\": ["
+    local first=true
+    for item in "${matches[@]}"; do
+        if [[ "$first" == "true" ]]; then
+            first=false
+        else
+            echo ","
+        fi
+        echo -n "    $item"
+    done
+    if [[ ${#matches[@]} -gt 0 ]]; then echo; fi
+    echo "  ],"
+
+    # Mismatches array
+    echo "  \"mismatches\": ["
+    first=true
+    for item in "${mismatches[@]}"; do
+        if [[ "$first" == "true" ]]; then
+            first=false
+        else
+            echo ","
+        fi
+        echo -n "    $item"
+    done
+    if [[ ${#mismatches[@]} -gt 0 ]]; then echo; fi
+    echo "  ],"
+
+    # Errors array
+    echo "  \"errors\": ["
+    first=true
+    for item in "${errors[@]}"; do
+        if [[ "$first" == "true" ]]; then
+            first=false
+        else
+            echo ","
+        fi
+        echo -n "    $item"
+    done
+    if [[ ${#errors[@]} -gt 0 ]]; then echo; fi
+    echo "  ],"
+
+    # Skipped array
+    echo "  \"skipped\": ["
+    first=true
+    for item in "${skipped[@]}"; do
+        if [[ "$first" == "true" ]]; then
+            first=false
+        else
+            echo ","
+        fi
+        echo -n "    $item"
+    done
+    if [[ ${#skipped[@]} -gt 0 ]]; then echo; fi
+    echo "  ]"
+
+    echo "}"
+
+    # Return non-zero if there are mismatches or errors
+    if [[ ${#mismatches[@]} -gt 0 || ${#errors[@]} -gt 0 ]]; then
+        return 1
+    fi
+    return 0
+}
+
 # ============================================================
 # CLI Interface
 # ============================================================
@@ -647,7 +758,7 @@ usage() {
 security.sh - ACFS Installer Security Verification
 
 Usage:
-  security.sh [command]
+  security.sh [command] [options]
 
 Commands:
   --print              Print all upstream URLs
@@ -656,15 +767,28 @@ Commands:
   --checksum URL       Calculate SHA256 of a URL
   --help               Show this help
 
+Options:
+  --json               Output in JSON format (use with --verify)
+
 Examples:
   ./security.sh --print
   ./security.sh --update-checksums > checksums.yaml
   ./security.sh --verify
+  ./security.sh --verify --json
   ./security.sh --checksum https://bun.sh/install
 EOF
 }
 
 main() {
+    local json_output=false
+
+    # Parse --json flag if present
+    for arg in "$@"; do
+        if [[ "$arg" == "--json" ]]; then
+            json_output=true
+        fi
+    done
+
     case "${1:-}" in
         --print)
             print_upstream_urls
@@ -674,7 +798,11 @@ main() {
             ;;
         --verify)
             load_checksums
-            verify_all_installers
+            if [[ "$json_output" == "true" ]]; then
+                verify_all_installers_json
+            else
+                verify_all_installers
+            fi
             ;;
         --checksum)
             if [[ -z "${2:-}" ]]; then
