@@ -1872,10 +1872,7 @@ install_cli_tools() {
 # ============================================================
 # Phase 5: Language runtimes
 # ============================================================
-install_languages() {
-    set_phase "install_languages" "Language Runtimes" 6
-    log_step "6/10" "Installing language runtimes..."
-
+install_languages_legacy_lang() {
     # Bun (install as target user)
     local bun_bin="$TARGET_HOME/.bun/bin/bun"
     if [[ ! -x "$bun_bin" ]]; then
@@ -1890,20 +1887,6 @@ install_languages() {
         try_step "Installing Rust" acfs_run_verified_upstream_script_as_target "rust" "sh" -y || return 1
     fi
 
-    # ast-grep (sg) - required by UBS for syntax-aware scanning
-    if [[ ! -x "$TARGET_HOME/.cargo/bin/sg" ]]; then
-        if [[ -x "$cargo_bin" ]]; then
-            log_detail "Installing ast-grep (sg) via cargo"
-            if try_step "Installing ast-grep via cargo" run_as_target "$cargo_bin" install ast-grep --locked; then
-                log_success "ast-grep installed"
-            else
-                log_fatal "Failed to install ast-grep (sg)"
-            fi
-        else
-            log_fatal "Cargo not found at $cargo_bin (cannot install ast-grep)"
-        fi
-    fi
-
     # Go (system-wide)
     if ! command_exists go; then
         log_detail "Installing Go"
@@ -1916,6 +1899,23 @@ install_languages() {
     else
         log_detail "Installing uv for $TARGET_USER"
         try_step "Installing uv" acfs_run_verified_upstream_script_as_target "uv" "sh" || return 1
+    fi
+}
+
+install_languages_legacy_tools() {
+    # ast-grep (sg) - required by UBS for syntax-aware scanning
+    local cargo_bin="$TARGET_HOME/.cargo/bin/cargo"
+    if [[ ! -x "$TARGET_HOME/.cargo/bin/sg" ]]; then
+        if [[ -x "$cargo_bin" ]]; then
+            log_detail "Installing ast-grep (sg) via cargo"
+            if try_step "Installing ast-grep via cargo" run_as_target "$cargo_bin" install ast-grep --locked; then
+                log_success "ast-grep installed"
+            else
+                log_fatal "Failed to install ast-grep (sg)"
+            fi
+        else
+            log_fatal "Cargo not found at $cargo_bin (cannot install ast-grep)"
+        fi
     fi
 
     # Atuin (install as target user)
@@ -1934,6 +1934,35 @@ install_languages() {
     else
         log_detail "Installing Zoxide for $TARGET_USER"
         try_step "Installing Zoxide" acfs_run_verified_upstream_script_as_target "zoxide" "sh" || return 1
+    fi
+}
+
+install_languages() {
+    set_phase "install_languages" "Language Runtimes" 6
+    log_step "6/10" "Installing language runtimes..."
+
+    local ran_any=false
+
+    if acfs_use_generated_category "lang"; then
+        log_detail "Using generated installers for lang (phase 6)"
+        acfs_run_generated_category_phase "lang" "6" || return 1
+        ran_any=true
+    else
+        install_languages_legacy_lang || return 1
+        ran_any=true
+    fi
+
+    if acfs_use_generated_category "tools"; then
+        log_detail "Using generated installers for tools (phase 6)"
+        acfs_run_generated_category_phase "tools" "6" || return 1
+        ran_any=true
+    else
+        install_languages_legacy_tools || return 1
+        ran_any=true
+    fi
+
+    if [[ "$ran_any" != "true" ]]; then
+        log_warn "No language/tool modules selected"
     fi
 
     log_success "Language runtimes installed"
