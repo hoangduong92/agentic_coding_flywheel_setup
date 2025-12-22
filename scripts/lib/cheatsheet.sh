@@ -8,6 +8,7 @@ set -euo pipefail
 
 ACFS_HOME="${ACFS_HOME:-$HOME/.acfs}"
 ACFS_VERSION="${ACFS_VERSION:-0.1.0}"
+CHEATSHEET_DELIM=$'\t'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -172,7 +173,9 @@ cheatsheet_parse_zshrc() {
 
     local line_active="$overall_active"
     # Handle one-line conditionals: `command -v tool ... && alias name='cmd'`
-    if [[ "$line" =~ ^[[:space:]]*command[[:space:]]+-v[[:space:]]+([[:alnum:]_.+-]+)[^#]*&&[[:space:]]*alias[[:space:]] ]]; then
+    # shellcheck disable=SC2250  # Regex pattern stored in variable for portability
+    local oneliner_pattern='^[[:space:]]*command[[:space:]]+-v[[:space:]]+([[:alnum:]_.+-]+)[^#]*&&[[:space:]]*alias[[:space:]]'
+    if [[ "$line" =~ $oneliner_pattern ]]; then
       local tool="${BASH_REMATCH[1]}"
       if ! command -v "$tool" &>/dev/null; then
         line_active=false
@@ -219,7 +222,7 @@ cheatsheet_parse_zshrc() {
       local category="$current_category"
       [[ -z "$category" || "$category" == "Misc" ]] && category="$(infer_category "$name" "$cmd")"
 
-      printf '%s|%s|%s|%s\n' "$category" "$name" "$cmd" "alias"
+      printf '%s%s%s%s%s%s%s\n' "$category" "$CHEATSHEET_DELIM" "$name" "$CHEATSHEET_DELIM" "$cmd" "$CHEATSHEET_DELIM" "alias"
 
       # Continue searching for more aliases in the same line.
       rest="$remainder"
@@ -242,7 +245,7 @@ cheatsheet_collect_entries() {
   local -a dedup_rev=()
   local i
   for ((i=${#entries[@]}-1; i>=0; i--)); do
-    IFS='|' read -r _cat name _cmd _kind <<<"${entries[$i]}"
+    IFS="$CHEATSHEET_DELIM" read -r _cat name _cmd _kind <<<"${entries[$i]}"
     if [[ -z "$name" || -n "${seen[$name]:-}" ]]; then
       continue
     fi
@@ -262,7 +265,7 @@ cheatsheet_filter_entries() {
 
   local line cat name cmd kind
   while IFS= read -r line; do
-    IFS='|' read -r cat name cmd kind <<<"$line"
+    IFS="$CHEATSHEET_DELIM" read -r cat name cmd kind <<<"$line"
 
     if [[ -n "$category_filter" ]]; then
       if [[ "${cat,,}" != "${category_filter,,}" ]]; then
@@ -293,7 +296,7 @@ cheatsheet_render_plain() {
   local current=""
   local cat name cmd kind line
   while IFS= read -r line; do
-    IFS='|' read -r cat name cmd kind <<<"$line"
+    IFS="$CHEATSHEET_DELIM" read -r cat name cmd kind <<<"$line"
     if [[ "$cat" != "$current" ]]; then
       current="$cat"
       echo "$current"
@@ -314,7 +317,7 @@ cheatsheet_render_gum() {
   local current=""
   local cat name cmd kind line
   while IFS= read -r line; do
-    IFS='|' read -r cat name cmd kind <<<"$line"
+    IFS="$CHEATSHEET_DELIM" read -r cat name cmd kind <<<"$line"
     if [[ "$cat" != "$current" ]]; then
       current="$cat"
       echo ""
@@ -337,7 +340,7 @@ cheatsheet_render_json() {
 
   local cat name cmd kind line
   while IFS= read -r line; do
-    IFS='|' read -r cat name cmd kind <<<"$line"
+    IFS="$CHEATSHEET_DELIM" read -r cat name cmd kind <<<"$line"
     if [[ "$first" == "true" ]]; then
       first=false
     else
@@ -372,15 +375,27 @@ main() {
         shift
         ;;
       --category)
-        category_filter="${2:-}"
+        if [[ -z "${2:-}" ]]; then
+          echo "Error: --category requires a value" >&2
+          return 1
+        fi
+        category_filter="$2"
         shift 2
         ;;
       --search)
-        search_filter="${2:-}"
+        if [[ -z "${2:-}" ]]; then
+          echo "Error: --search requires a value" >&2
+          return 1
+        fi
+        search_filter="$2"
         shift 2
         ;;
       --zshrc)
-        zshrc="${2:-$zshrc}"
+        if [[ -z "${2:-}" ]]; then
+          echo "Error: --zshrc requires a path" >&2
+          return 1
+        fi
+        zshrc="$2"
         shift 2
         ;;
       *)
