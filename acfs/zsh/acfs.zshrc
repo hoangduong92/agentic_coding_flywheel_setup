@@ -266,8 +266,8 @@ acfs() {
 
 # --- Agent aliases (dangerously enabled by design) ---
 alias cc='NODE_OPTIONS="--max-old-space-size=32768" ENABLE_BACKGROUND_TASKS=1 claude --dangerously-skip-permissions'
-alias cod='codex --dangerously-skip-permissions'
-alias gmi='gemini --sandbox=false'
+alias cod='codex --dangerously-bypass-approvals-and-sandbox'
+alias gmi='gemini --yolo'
 
 # bun project helpers (common)
 alias br='bun run dev'
