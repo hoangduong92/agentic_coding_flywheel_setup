@@ -601,6 +601,21 @@ handle_all_checksum_mismatches() {
     local mismatch_count
     mismatch_count="$(count_checksum_mismatches)"
 
+    if [[ "${ACFS_STRICT_MODE:-false}" == "true" ]]; then
+        echo "" >&2
+        echo -e "${RED}Security Error:${NC} Checksum mismatches detected (strict mode). Aborting." >&2
+        echo "" >&2
+        for entry in "${CHECKSUM_MISMATCHES[@]}"; do
+            IFS="|" read -r tool url expected actual <<< "$entry"
+            echo -e "  ${RED}[mismatch]${NC} $tool" >&2
+            echo -e "      Expected: ${expected:0:16}..." >&2
+            echo -e "      Actual:   ${actual:0:16}..." >&2
+            echo -e "      URL: $url" >&2
+            echo "" >&2
+        done
+        return 1
+    fi
+
     # Source tools.sh for CRITICAL vs RECOMMENDED classification
     local tools_lib="${SECURITY_SCRIPT_DIR}/tools.sh"
     if [[ -r "$tools_lib" ]]; then
@@ -802,6 +817,14 @@ handle_checksum_mismatch() {
     local expected="$2"
     local actual="$3"
     local url="$4"
+
+    if [[ "${ACFS_STRICT_MODE:-false}" == "true" ]]; then
+        echo -e "${RED}Security Error:${NC} Checksum mismatch for $tool (strict mode)" >&2
+        echo -e "  Expected: $expected" >&2
+        echo -e "  Actual:   $actual" >&2
+        echo -e "  URL: $url" >&2
+        return 1
+    fi
 
     # If batch mode is enabled, just record and return proceed
     if [[ "${ACFS_BATCH_CHECKSUMS:-false}" == "true" ]]; then
