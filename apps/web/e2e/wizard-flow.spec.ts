@@ -923,13 +923,13 @@ test.describe("Step 13: Launch Onboarding Page", () => {
     await page.goto("/wizard/launch-onboarding");
     await expect(page.locator("h1").first()).toBeVisible({ timeout: TIMEOUTS.PAGE_LOAD });
 
-    // This is the final step of the wizard - it should have a "Continue to Part Two" CTA
+    // This is the final step of the wizard - it should have learning hub CTAs
     // but should NOT have a standard wizard "Next" navigation button
-    const continueToPartTwoButton = page.locator('button:has-text("Continue to Part Two")');
+    const learningHubButton = page.locator('button:has-text("Start Learning Hub")');
     const nextStepButton = page.locator('button:has-text("Next Step")');
 
-    // Should have the Part Two CTA
-    await expect(continueToPartTwoButton).toBeVisible();
+    // Should have the Learning Hub CTA
+    await expect(learningHubButton).toBeVisible();
 
     // Should NOT have a standard "Next Step" navigation (this is the final step)
     const nextStepCount = await nextStepButton.count();
