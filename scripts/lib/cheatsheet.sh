@@ -65,7 +65,7 @@ normalize_category() {
     *git*) echo "Git" ;;
     *docker*) echo "Docker" ;;
     *directory*) echo "Directories" ;;
-    *bun*) echo "Bun" ;;
+    bun*) echo "Bun" ;;
     *ubuntu*|*debian*|*convenience*) echo "System" ;;
     *modern*cli*) echo "Modern CLI" ;;
     *) [[ -n "$raw" ]] && echo "$raw" || echo "Misc" ;;
@@ -104,17 +104,48 @@ cheatsheet_parse_zshrc() {
     fi
 
     rest="$line"
-    while [[ "$rest" =~ alias[[:space:]]+([a-zA-Z0-9_-]+)=('([^']*)'|\"([^\"]*)\"|([^[:space:]]+)) ]]; do
-      local name="${BASH_REMATCH[1]}"
-      local cmd="${BASH_REMATCH[3]:-${BASH_REMATCH[4]:-${BASH_REMATCH[5]}}}"
+    while [[ "$rest" == *"alias "* ]]; do
+      # Move to the next alias segment.
+      rest="${rest#*alias }"
+
+      local name="${rest%%=*}"
+      name="${name%%[[:space:]]*}"
+      [[ -n "$name" ]] || break
+
+      local value="${rest#*=}"
+      [[ -n "$value" ]] || break
+
+      local cmd="" remainder=""
+      if [[ "$value" == \'* ]]; then
+        value="${value#\'}"
+        if [[ "$value" == *"'"* ]]; then
+          cmd="${value%%\'*}"
+          remainder="${value#*\'}"
+        else
+          cmd="$value"
+          remainder=""
+        fi
+      elif [[ "$value" == \"* ]]; then
+        value="${value#\"}"
+        if [[ "$value" == *"\""* ]]; then
+          cmd="${value%%\"*}"
+          remainder="${value#*\"}"
+        else
+          cmd="$value"
+          remainder=""
+        fi
+      else
+        cmd="${value%%[[:space:]]*}"
+        remainder="${value#"$cmd"}"
+      fi
 
       local category="$current_category"
       [[ -z "$category" || "$category" == "Misc" ]] && category="$(infer_category "$name" "$cmd")"
 
       printf '%s|%s|%s|%s\n' "$category" "$name" "$cmd" "alias"
 
-      # Continue searching after this match (supports multiple aliases per line)
-      rest="${rest#*alias }"
+      # Continue searching for more aliases in the same line.
+      rest="$remainder"
     done
   done < "$zshrc"
 }

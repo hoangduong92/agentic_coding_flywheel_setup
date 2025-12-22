@@ -2786,6 +2786,7 @@ finalize() {
     try_step "Installing continue.sh" install_asset "scripts/lib/continue.sh" "$ACFS_HOME/scripts/lib/continue.sh" || return 1
     try_step "Installing info.sh" install_asset "scripts/lib/info.sh" "$ACFS_HOME/scripts/lib/info.sh" || return 1
     try_step "Installing cheatsheet.sh" install_asset "scripts/lib/cheatsheet.sh" "$ACFS_HOME/scripts/lib/cheatsheet.sh" || return 1
+    try_step "Installing dashboard.sh" install_asset "scripts/lib/dashboard.sh" "$ACFS_HOME/scripts/lib/dashboard.sh" || return 1
 
     # Install acfs-update wrapper command
     try_step "Installing acfs-update" install_asset "scripts/acfs-update" "$ACFS_HOME/bin/acfs-update" || return 1

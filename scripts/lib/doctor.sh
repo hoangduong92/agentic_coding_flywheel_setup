@@ -124,7 +124,9 @@ print_acfs_help() {
     echo "  doctor [options]    Check system health and tool status"
     echo "    --json            Output results as JSON"
     echo "    --deep            Run functional tests (auth, connections)"
+    echo "  info [options]      Quick system overview (terminal/json/html)"
     echo "  continue [options]  View installation/upgrade progress"
+    echo "  dashboard <command> Generate/view a static HTML dashboard"
     echo "  update [options]    Update ACFS tools to latest versions"
     echo "  services-setup      Configure AI agents and cloud services"
     echo "  session <command>   Export/import/share agent sessions"
@@ -1515,6 +1517,42 @@ main() {
     case "$subcmd" in
         doctor|check)
             shift
+            ;;
+        info|i)
+            shift
+            local info_script=""
+            if [[ -f "$HOME/.acfs/scripts/lib/info.sh" ]]; then
+                info_script="$HOME/.acfs/scripts/lib/info.sh"
+            elif [[ -f "$SCRIPT_DIR/info.sh" ]]; then
+                info_script="$SCRIPT_DIR/info.sh"
+            elif [[ -f "$SCRIPT_DIR/../scripts/lib/info.sh" ]]; then
+                info_script="$SCRIPT_DIR/../scripts/lib/info.sh"
+            fi
+
+            if [[ -n "$info_script" ]]; then
+                exec bash "$info_script" "$@"
+            fi
+
+            echo "Error: info.sh not found" >&2
+            return 1
+            ;;
+        dashboard)
+            shift
+            local dashboard_script=""
+            if [[ -f "$HOME/.acfs/scripts/lib/dashboard.sh" ]]; then
+                dashboard_script="$HOME/.acfs/scripts/lib/dashboard.sh"
+            elif [[ -f "$SCRIPT_DIR/dashboard.sh" ]]; then
+                dashboard_script="$SCRIPT_DIR/dashboard.sh"
+            elif [[ -f "$SCRIPT_DIR/../scripts/lib/dashboard.sh" ]]; then
+                dashboard_script="$SCRIPT_DIR/../scripts/lib/dashboard.sh"
+            fi
+
+            if [[ -n "$dashboard_script" ]]; then
+                exec bash "$dashboard_script" "$@"
+            fi
+
+            echo "Error: dashboard.sh not found" >&2
+            return 1
             ;;
         continue|progress)
             shift
