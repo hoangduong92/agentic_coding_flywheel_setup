@@ -1,7 +1,7 @@
 /**
  * Wizard Steps Configuration
  *
- * Defines the 12 steps of the Agent Flywheel setup wizard.
+ * Defines the 13 steps of the Agent Flywheel setup wizard.
  * Each step guides beginners from "I have a laptop" to "fully configured VPS".
  * Uses TanStack Query for React state management with localStorage persistence.
  */
@@ -49,7 +49,7 @@ export const WIZARD_STEPS: WizardStep[] = [
   {
     id: 5,
     title: "Create VPS Instance",
-    description: "Launch your VPS and attach your SSH key",
+    description: "Launch your VPS with password authentication",
     slug: "create-vps",
   },
   {

@@ -81,9 +81,8 @@ export default function GenerateSSHKeyPage() {
       {/* Explanation */}
       <AlertCard variant="info" title="How SSH keys work">
         You&apos;re creating a <strong className="text-foreground">key pair</strong>: a <Jargon term="private-key">private key</Jargon> (stays on
-        your computer) and a <Jargon term="public-key">public key</Jargon> (you&apos;ll paste into your <Jargon term="vps">VPS</Jargon>{" "}
-        provider). Think of it like a lock and key: you share the lock, but
-        only you have the key.
+        your computer) and a <Jargon term="public-key">public key</Jargon> (you&apos;ll paste during installation).
+        Think of it like a lock and key: you share the lock, but only you have the key.
       </AlertCard>
 
       {/* Privacy assurance */}
