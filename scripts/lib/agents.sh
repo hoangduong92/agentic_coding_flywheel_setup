@@ -360,17 +360,21 @@ get_agent_versions() {
     local target_user="${TARGET_USER:-ubuntu}"
     local target_home="${TARGET_HOME:-/home/$target_user}"
     local bun_bin_dir="$target_home/.bun/bin"
+    local claude_native_bin="$target_home/.local/bin/claude"
 
     echo "Coding Agent Versions:"
 
-    if [[ -x "$bun_bin_dir/$CLAUDE_BIN" ]]; then
-        echo "  claude: $("$bun_bin_dir/$CLAUDE_BIN" --version 2>/dev/null || echo 'installed')"
+    # Check Claude Code (native install takes priority, then bun)
+    if [[ -x "$claude_native_bin" ]]; then
+        echo "  claude: $(_agent_run_as_user "\"$claude_native_bin\" --version" 2>/dev/null || echo 'installed')"
+    elif [[ -x "$bun_bin_dir/$CLAUDE_BIN" ]]; then
+        echo "  claude: $(_agent_run_as_user "\"$bun_bin_dir/$CLAUDE_BIN\" --version" 2>/dev/null || echo 'installed')"
     fi
     if [[ -x "$bun_bin_dir/$CODEX_BIN" ]]; then
-        echo "  codex: $("$bun_bin_dir/$CODEX_BIN" --version 2>/dev/null || echo 'installed')"
+        echo "  codex: $(_agent_run_as_user "\"$bun_bin_dir/$CODEX_BIN\" --version" 2>/dev/null || echo 'installed')"
     fi
     if [[ -x "$bun_bin_dir/$GEMINI_BIN" ]]; then
-        echo "  gemini: $("$bun_bin_dir/$GEMINI_BIN" --version 2>/dev/null || echo 'installed')"
+        echo "  gemini: $(_agent_run_as_user "\"$bun_bin_dir/$GEMINI_BIN\" --version" 2>/dev/null || echo 'installed')"
     fi
 }
 
