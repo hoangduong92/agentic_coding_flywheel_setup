@@ -54,7 +54,7 @@ acfs_security_init() {
 }
 
 # Category: lang
-# Modules: 4
+# Modules: 5
 
 # Bun runtime for JS tooling and global CLIs
 install_lang_bun() {
@@ -270,6 +270,82 @@ INSTALL_LANG_GO
     log_success "lang.go installed"
 }
 
+# nvm + latest Node.js
+install_lang_nvm() {
+    local module_id="lang.nvm"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing lang.nvm"
+
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: verified installer: lang.nvm"
+    else
+        if ! {
+            # Try security-verified install first, fall back to direct install
+            local install_success=false
+
+            if acfs_security_init 2>/dev/null; then
+                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+                # The grep ensures we specifically have an associative array, not just any variable
+                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
+                    local tool="nvm"
+                    local url=""
+                    local expected_sha256=""
+
+                    # Safe access with explicit empty default
+                    url="${KNOWN_INSTALLERS[$tool]:-}"
+                    expected_sha256="$(get_checksum "$tool" 2>/dev/null)" || expected_sha256=""
+
+                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                        if verify_checksum "$url" "$expected_sha256" "$tool" 2>/dev/null | run_as_target_runner 'bash'; then
+                            install_success=true
+                        fi
+                    fi
+                fi
+            fi
+
+            # No fallback URL - verified install is required
+            if [[ "$install_success" != "true" ]]; then
+                log_error "Verified install failed for lang.nvm and no fallback available"
+                false
+            fi
+        }; then
+            log_error "lang.nvm: verified installer failed"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: export NVM_DIR=\"\$HOME/.nvm\" (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_LANG_NVM'
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+nvm install node
+nvm alias default node
+INSTALL_LANG_NVM
+        then
+            log_error "lang.nvm: install command failed: export NVM_DIR=\"\$HOME/.nvm\""
+            return 1
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: verify: export NVM_DIR=\"\$HOME/.nvm\" (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_LANG_NVM'
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+node --version
+INSTALL_LANG_NVM
+        then
+            log_error "lang.nvm: verify failed: export NVM_DIR=\"\$HOME/.nvm\""
+            return 1
+        fi
+    fi
+
+    log_success "lang.nvm installed"
+}
+
 # Install all lang modules
 install_lang() {
     log_section "Installing lang modules"
@@ -277,6 +353,7 @@ install_lang() {
     install_lang_uv
     install_lang_rust
     install_lang_go
+    install_lang_nvm
 }
 
 # Run if executed directly

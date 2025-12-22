@@ -42,6 +42,10 @@ installers:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh"
     sha256: "0818e7c3e43d7b1c03ffcadbdc1f8fb2dce4611e17dae2a612c37b7d6954a725"
 
+  nvm:
+    url: "https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh"
+    sha256: "abdb525ee9f5b48b34d8ed9fc67c6013fb0f659712e401ecd88ab989b3af8f53"
+
   ohmyzsh:
     url: "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
     sha256: "ce0b7c94aa04d8c7a8137e45fe5c4744e3947871f785fd58117c480c1bf49352"

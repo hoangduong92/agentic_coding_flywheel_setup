@@ -342,6 +342,35 @@ modules:
     verify:
       - go version
 
+  - id: lang.nvm
+    description: nvm + latest Node.js
+    category: lang
+    phase: 6
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [critical, runtime]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: target_user
+      command: "test -d ~/.nvm && command -v node"
+    verified_installer:
+      tool: nvm
+      runner: bash
+    install:
+      # After nvm is installed, source it and install latest Node.js
+      - |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        nvm install node
+        nvm alias default node
+    verify:
+      - |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        node --version
+
   # Additional CLI tools in phase 6
   - id: tools.atuin
     description: Atuin shell history (Ctrl-R superpowers)
@@ -439,11 +468,19 @@ modules:
       - lang.bun
     installed_check:
       run_as: target_user
-      command: "command -v codex"
+      command: "test -x ~/.local/bin/codex"
     install:
+      # Install via bun, then create wrapper that uses bun as runtime (faster than node)
       - ~/.bun/bin/bun install -g @openai/codex@latest
+      - |
+        mkdir -p ~/.local/bin
+        cat > ~/.local/bin/codex << 'WRAPPER'
+        #!/bin/bash
+        exec ~/.bun/bin/bun ~/.bun/bin/codex "$@"
+        WRAPPER
+        chmod +x ~/.local/bin/codex
     verify:
-      - codex --version || codex --help
+      - ~/.local/bin/codex --version || ~/.local/bin/codex --help
 
   - id: agents.gemini
     description: Google Gemini CLI
@@ -457,11 +494,19 @@ modules:
       - lang.bun
     installed_check:
       run_as: target_user
-      command: "command -v gemini"
+      command: "test -x ~/.local/bin/gemini"
     install:
+      # Install via bun, then create wrapper that uses bun as runtime (faster than node)
       - ~/.bun/bin/bun install -g @google/gemini-cli@latest
+      - |
+        mkdir -p ~/.local/bin
+        cat > ~/.local/bin/gemini << 'WRAPPER'
+        #!/bin/bash
+        exec ~/.bun/bin/bun ~/.bun/bin/gemini "$@"
+        WRAPPER
+        chmod +x ~/.local/bin/gemini
     verify:
-      - gemini --version || gemini --help
+      - ~/.local/bin/gemini --version || ~/.local/bin/gemini --help
 
   # ============================================================
   # PHASE 8: Cloud & database tools

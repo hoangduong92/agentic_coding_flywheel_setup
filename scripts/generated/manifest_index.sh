@@ -6,7 +6,7 @@
 # ============================================================
 # Data-only manifest index. Safe to source.
 
-ACFS_MANIFEST_SHA256="d292bf7eb83bebc41fa2fde6141c8ec59fcd40c64de3038e84cc5a62398ecfd8"
+ACFS_MANIFEST_SHA256="6e18f941d2bfa558f649e47cea508f73d3eefca63c7238ef600b794b97b8a42f"
 
 ACFS_MODULES_IN_ORDER=(
   "base.system"
@@ -20,6 +20,7 @@ ACFS_MODULES_IN_ORDER=(
   "lang.uv"
   "lang.rust"
   "lang.go"
+  "lang.nvm"
   "tools.atuin"
   "tools.zoxide"
   "tools.ast_grep"
@@ -55,6 +56,7 @@ declare -gA ACFS_MODULE_PHASE=(
   [lang.uv]="6"
   [lang.rust]="6"
   [lang.go]="6"
+  [lang.nvm]="6"
   [tools.atuin]="6"
   [tools.zoxide]="6"
   [tools.ast_grep]="6"
@@ -90,6 +92,7 @@ declare -gA ACFS_MODULE_DEPS=(
   [lang.uv]="base.system"
   [lang.rust]="base.system"
   [lang.go]="base.system"
+  [lang.nvm]="base.system"
   [tools.atuin]="base.system"
   [tools.zoxide]="base.system"
   [tools.ast_grep]="lang.rust"
@@ -125,6 +128,7 @@ declare -gA ACFS_MODULE_FUNC=(
   [lang.uv]="install_lang_uv"
   [lang.rust]="install_lang_rust"
   [lang.go]="install_lang_go"
+  [lang.nvm]="install_lang_nvm"
   [tools.atuin]="install_tools_atuin"
   [tools.zoxide]="install_tools_zoxide"
   [tools.ast_grep]="install_tools_ast_grep"
@@ -160,6 +164,7 @@ declare -gA ACFS_MODULE_CATEGORY=(
   [lang.uv]="lang"
   [lang.rust]="lang"
   [lang.go]="lang"
+  [lang.nvm]="lang"
   [tools.atuin]="tools"
   [tools.zoxide]="tools"
   [tools.ast_grep]="tools"
@@ -195,6 +200,7 @@ declare -gA ACFS_MODULE_TAGS=(
   [lang.uv]="critical,runtime"
   [lang.rust]="critical,runtime"
   [lang.go]="critical,runtime"
+  [lang.nvm]="critical,runtime"
   [tools.atuin]="recommended,shell-ux"
   [tools.zoxide]="recommended,shell-ux"
   [tools.ast_grep]="recommended"
@@ -230,6 +236,7 @@ declare -gA ACFS_MODULE_DEFAULT=(
   [lang.uv]="1"
   [lang.rust]="1"
   [lang.go]="1"
+  [lang.nvm]="1"
   [tools.atuin]="1"
   [tools.zoxide]="1"
   [tools.ast_grep]="1"

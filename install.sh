@@ -1223,34 +1223,45 @@ install_asset() {
 
 run_as_target() {
     local user="$TARGET_USER"
+    local user_home="${TARGET_HOME:-/home/$user}"
 
     # Environment variables to set for target user commands
     # UV_NO_CONFIG prevents uv from looking for config in /root when running via sudo
-    local env_vars="UV_NO_CONFIG=1"
+    # HOME is set explicitly to ensure consistent home directory
+    local env_vars="UV_NO_CONFIG=1 HOME=$user_home"
 
     # Already the target user
     if [[ "$(whoami)" == "$user" ]]; then
+        cd "$user_home" 2>/dev/null || true
         env $env_vars "$@"
         return $?
     fi
 
-    # Preferred: sudo with login shell simulation (-i)
-    # This sets HOME and changes to the user's home directory,
-    # matching the behavior of 'su - user' for consistent CWD
+    # IMPORTANT: Do NOT use sudo -i as it sources profile files (.profile, .bashrc)
+    # which may be corrupted by third-party installers (e.g., uv adds lines that
+    # reference non-existent files). Instead:
+    # - Use sudo -u to switch user without sourcing profiles
+    # - Set HOME explicitly in the environment
+    # - Use sh -c to cd to home directory before executing
+    #
+    # The sh -c wrapper: 'cd "$HOME" && exec "$@"' _ "$@"
+    # - First $@ expands inside sh -c to become positional params
+    # - _ is $0 (script name placeholder)
+    # - exec "$@" replaces sh with the target command, preserving stdin
     if command_exists sudo; then
-        # Note: env doesn't accept -- as option separator, so we omit it
-        sudo -i -u "$user" env $env_vars "$@"
+        sudo -u "$user" env $env_vars sh -c 'cd "$HOME" 2>/dev/null; exec "$@"' _ "$@"
         return $?
     fi
 
     # Fallbacks (root-only typically)
+    # Note: Avoid -l flag to prevent sourcing profiles
     if command_exists runuser; then
-        # runuser -l is the login shell variant
-        runuser -l "$user" -c "export $env_vars; $(printf '%q ' "$@")"
+        runuser -u "$user" -- env $env_vars sh -c 'cd "$HOME" 2>/dev/null; exec "$@"' _ "$@"
         return $?
     fi
 
-    su - "$user" -c "export $env_vars; $(printf '%q ' "$@")"
+    # su without - to avoid sourcing login shell profiles
+    su "$user" -c "cd '$user_home' 2>/dev/null; export $env_vars; $(printf '%q ' "$@")"
 }
 
 # ============================================================

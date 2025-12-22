@@ -133,16 +133,32 @@ INSTALL_AGENTS_CODEX
             return 1
         fi
     fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: mkdir -p ~/.local/bin (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_AGENTS_CODEX'
+mkdir -p ~/.local/bin
+cat > ~/.local/bin/codex << 'WRAPPER'
+#!/bin/bash
+exec ~/.bun/bin/bun ~/.bun/bin/codex "$@"
+WRAPPER
+chmod +x ~/.local/bin/codex
+INSTALL_AGENTS_CODEX
+        then
+            log_error "agents.codex: install command failed: mkdir -p ~/.local/bin"
+            return 1
+        fi
+    fi
 
     # Verify
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "dry-run: verify: codex --version || codex --help (target_user)"
+        log_info "dry-run: verify: ~/.local/bin/codex --version || ~/.local/bin/codex --help (target_user)"
     else
         if ! run_as_target_shell <<'INSTALL_AGENTS_CODEX'
-codex --version || codex --help
+~/.local/bin/codex --version || ~/.local/bin/codex --help
 INSTALL_AGENTS_CODEX
         then
-            log_error "agents.codex: verify failed: codex --version || codex --help"
+            log_error "agents.codex: verify failed: ~/.local/bin/codex --version || ~/.local/bin/codex --help"
             return 1
         fi
     fi
@@ -167,16 +183,32 @@ INSTALL_AGENTS_GEMINI
             return 1
         fi
     fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: mkdir -p ~/.local/bin (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_AGENTS_GEMINI'
+mkdir -p ~/.local/bin
+cat > ~/.local/bin/gemini << 'WRAPPER'
+#!/bin/bash
+exec ~/.bun/bin/bun ~/.bun/bin/gemini "$@"
+WRAPPER
+chmod +x ~/.local/bin/gemini
+INSTALL_AGENTS_GEMINI
+        then
+            log_error "agents.gemini: install command failed: mkdir -p ~/.local/bin"
+            return 1
+        fi
+    fi
 
     # Verify
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "dry-run: verify: gemini --version || gemini --help (target_user)"
+        log_info "dry-run: verify: ~/.local/bin/gemini --version || ~/.local/bin/gemini --help (target_user)"
     else
         if ! run_as_target_shell <<'INSTALL_AGENTS_GEMINI'
-gemini --version || gemini --help
+~/.local/bin/gemini --version || ~/.local/bin/gemini --help
 INSTALL_AGENTS_GEMINI
         then
-            log_error "agents.gemini: verify failed: gemini --version || gemini --help"
+            log_error "agents.gemini: verify failed: ~/.local/bin/gemini --version || ~/.local/bin/gemini --help"
             return 1
         fi
     fi

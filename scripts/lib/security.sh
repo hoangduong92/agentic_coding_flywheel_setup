@@ -117,6 +117,7 @@ declare -gA KNOWN_INSTALLERS=(
     [claude]="https://claude.ai/install.sh"
     [uv]="https://astral.sh/uv/install.sh"
     [rust]="https://sh.rustup.rs"
+    [nvm]="https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh"
     [ohmyzsh]="https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
     [zoxide]="https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh"
     [atuin]="https://setup.atuin.sh"
