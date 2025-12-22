@@ -1516,6 +1516,10 @@ init_target_paths() {
 
     # Export for generated installers (run via subshells).
     export TARGET_USER TARGET_HOME ACFS_HOME ACFS_STATE_FILE
+
+    # Add target user's bin directories to PATH early so that tools installed
+    # later (like Claude Code) see the correct PATH and don't warn about it.
+    export PATH="$TARGET_HOME/.local/bin:$TARGET_HOME/.cargo/bin:$TARGET_HOME/.bun/bin:$PATH"
 }
 
 validate_target_user() {
