@@ -44,6 +44,10 @@ export ZSH="$HOME/.oh-my-zsh"
 # Theme
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
+# Disable p10k configuration wizard - we provide a pre-configured ~/.p10k.zsh
+# This is a fallback in case the config file is missing for some reason
+typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
+
 # Oh My Zsh auto-update
 zstyle ':omz:update' mode auto
 zstyle ':omz:update' frequency 1

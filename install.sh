@@ -2086,6 +2086,12 @@ setup_shell() {
     try_step "Installing ACFS zshrc" install_asset "acfs/zsh/acfs.zshrc" "$ACFS_HOME/zsh/acfs.zshrc" || return 1
     try_step "Setting zshrc ownership" $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/zsh/acfs.zshrc" || return 1
 
+    # Install pre-configured Powerlevel10k theme settings
+    # This prevents the p10k configuration wizard from launching on first login
+    log_detail "Installing Powerlevel10k configuration"
+    try_step "Installing p10k config" install_asset "acfs/zsh/p10k.zsh" "$TARGET_HOME/.p10k.zsh" || return 1
+    try_step "Setting p10k config ownership" $SUDO chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.p10k.zsh" || return 1
+
     # Create minimal .zshrc loader for target user (backup existing if needed)
     local user_zshrc="$TARGET_HOME/.zshrc"
     if [[ -f "$user_zshrc" ]] && ! grep -q "^# ACFS loader" "$user_zshrc" 2>/dev/null; then

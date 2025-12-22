@@ -144,6 +144,10 @@ modules:
         mkdir -p ~/.acfs/zsh
         curl --proto '=https' --proto-redir '=https' -fsSL -o ~/.acfs/zsh/acfs.zshrc "${ACFS_RAW}/acfs/zsh/acfs.zshrc"
       - |
+        # Install pre-configured Powerlevel10k settings (prevents config wizard on first login)
+        ACFS_RAW="${ACFS_RAW:-https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main}"
+        curl --proto '=https' --proto-redir '=https' -fsSL -o ~/.p10k.zsh "${ACFS_RAW}/acfs/zsh/p10k.zsh"
+      - |
         # Setup loader .zshrc
         if [[ -f ~/.zshrc ]] && ! grep -q "ACFS loader" ~/.zshrc; then
           mv ~/.zshrc ~/.zshrc.bak.$(date +%s)
@@ -188,9 +192,11 @@ modules:
     verify:
       - test -d ~/.oh-my-zsh
       - test -f ~/.acfs/zsh/acfs.zshrc
+      - test -f ~/.p10k.zsh
     notes:
       - "Oh My Zsh and plugins installed via verified upstream installers"
       - "acfs.zshrc written from acfs/ assets"
+      - "Pre-configured p10k theme settings prevent wizard on first login"
 
   # ============================================================
   # PHASE 5: CLI tools

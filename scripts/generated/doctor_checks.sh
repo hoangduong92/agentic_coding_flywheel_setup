@@ -69,6 +69,7 @@ declare -a MANIFEST_CHECKS=(
     "shell.zsh	Zsh shell package	zsh --version	required"
     "shell.omz.1	Oh My Zsh + Powerlevel10k + plugins + ACFS config	test -d ~/.oh-my-zsh	required"
     "shell.omz.2	Oh My Zsh + Powerlevel10k + plugins + ACFS config	test -f ~/.acfs/zsh/acfs.zshrc	required"
+    "shell.omz.3	Oh My Zsh + Powerlevel10k + plugins + ACFS config	test -f ~/.p10k.zsh	required"
     "cli.modern.1	Modern CLI tools referenced by the zshrc intent	rg --version	required"
     "cli.modern.2	Modern CLI tools referenced by the zshrc intent	tmux -V	required"
     "cli.modern.3	Modern CLI tools referenced by the zshrc intent	fzf --version	required"
