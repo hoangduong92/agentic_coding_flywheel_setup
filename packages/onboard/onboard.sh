@@ -74,36 +74,36 @@ declare -a AUTH_SERVICES=(
 )
 
 declare -A AUTH_SERVICE_NAMES=(
-    ["tailscale"]="Tailscale"
-    ["claude"]="Claude Code"
-    ["codex"]="Codex CLI"
-    ["gemini"]="Gemini CLI"
-    ["github"]="GitHub"
-    ["vercel"]="Vercel"
-    ["supabase"]="Supabase"
-    ["cloudflare"]="Cloudflare"
+    [tailscale]="Tailscale"
+    [claude]="Claude Code"
+    [codex]="Codex CLI"
+    [gemini]="Gemini CLI"
+    [github]="GitHub"
+    [vercel]="Vercel"
+    [supabase]="Supabase"
+    [cloudflare]="Cloudflare"
 )
 
 declare -A AUTH_SERVICE_DESCRIPTIONS=(
-    ["tailscale"]="Secure VPS access via private network"
-    ["claude"]="Anthropic's AI coding agent"
-    ["codex"]="OpenAI's AI coding agent"
-    ["gemini"]="Google's AI coding agent"
-    ["github"]="Code hosting and version control"
-    ["vercel"]="Frontend deployment platform"
-    ["supabase"]="Database and auth backend"
-    ["cloudflare"]="CDN and edge computing"
+    [tailscale]="Secure VPS access via private network"
+    [claude]="Anthropic's AI coding agent"
+    [codex]="OpenAI's AI coding agent"
+    [gemini]="Google's AI coding agent"
+    [github]="Code hosting and version control"
+    [vercel]="Frontend deployment platform"
+    [supabase]="Database and auth backend"
+    [cloudflare]="CDN and edge computing"
 )
 
 declare -A AUTH_SERVICE_COMMANDS=(
-    ["tailscale"]="sudo tailscale up"
-    ["claude"]="claude"
-    ["codex"]="codex login"
-    ["gemini"]="gemini"
-    ["github"]="gh auth login"
-    ["vercel"]="vercel login"
-    ["supabase"]="supabase login"
-    ["cloudflare"]="wrangler login"
+    [tailscale]="sudo tailscale up"
+    [claude]="claude"
+    [codex]="codex login"
+    [gemini]="gemini"
+    [github]="gh auth login"
+    [vercel]="vercel login"
+    [supabase]="supabase login"
+    [cloudflare]="wrangler login"
 )
 
 # Colors (works in most terminals) - fallback if gum_ui not loaded
