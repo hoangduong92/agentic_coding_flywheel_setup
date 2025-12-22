@@ -79,7 +79,7 @@ install_agents_claude() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | bash
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash'
                 fi
             fi
         }; then

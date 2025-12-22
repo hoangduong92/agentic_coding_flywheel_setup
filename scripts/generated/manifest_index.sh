@@ -6,13 +6,14 @@
 # ============================================================
 # Data-only manifest index. Safe to source.
 
-ACFS_MANIFEST_SHA256="d877fc44fde421e57d87b85a59ad74b1fd74467d1937426ddde09981ea45fb72"
+ACFS_MANIFEST_SHA256="64667b6fd917471b0f2db89a2ca5046f66561c1cc0a8df2cd41f006ea40be0fc"
 
 ACFS_MODULES_IN_ORDER=(
   "base.system"
   "users.ubuntu"
   "base.filesystem"
   "shell.zsh"
+  "shell.omz"
   "cli.modern"
   "network.tailscale"
   "lang.bun"
@@ -47,6 +48,7 @@ declare -gA ACFS_MODULE_PHASE=(
   ["users.ubuntu"]="2"
   ["base.filesystem"]="3"
   ["shell.zsh"]="4"
+  ["shell.omz"]="4"
   ["cli.modern"]="5"
   ["network.tailscale"]="5"
   ["lang.bun"]="6"
@@ -81,6 +83,7 @@ declare -gA ACFS_MODULE_DEPS=(
   ["users.ubuntu"]=""
   ["base.filesystem"]="users.ubuntu"
   ["shell.zsh"]="base.system,base.filesystem"
+  ["shell.omz"]="shell.zsh"
   ["cli.modern"]="base.system"
   ["network.tailscale"]="base.system"
   ["lang.bun"]="base.system"
@@ -115,6 +118,7 @@ declare -gA ACFS_MODULE_FUNC=(
   ["users.ubuntu"]="install_users_ubuntu"
   ["base.filesystem"]="install_base_filesystem"
   ["shell.zsh"]="install_shell_zsh"
+  ["shell.omz"]="install_shell_omz"
   ["cli.modern"]="install_cli_modern"
   ["network.tailscale"]="install_network_tailscale"
   ["lang.bun"]="install_lang_bun"
@@ -149,6 +153,7 @@ declare -gA ACFS_MODULE_CATEGORY=(
   ["users.ubuntu"]="users"
   ["base.filesystem"]="filesystem"
   ["shell.zsh"]="shell"
+  ["shell.omz"]="shell"
   ["cli.modern"]="cli"
   ["network.tailscale"]="network"
   ["lang.bun"]="lang"
@@ -183,6 +188,7 @@ declare -gA ACFS_MODULE_TAGS=(
   ["users.ubuntu"]="orchestration,critical"
   ["base.filesystem"]="critical"
   ["shell.zsh"]="critical,shell-ux"
+  ["shell.omz"]="critical,shell-ux"
   ["cli.modern"]="recommended,cli-modern"
   ["network.tailscale"]="networking,vpn,security,google-sso"
   ["lang.bun"]="critical,runtime"
@@ -217,6 +223,7 @@ declare -gA ACFS_MODULE_DEFAULT=(
   ["users.ubuntu"]="1"
   ["base.filesystem"]="1"
   ["shell.zsh"]="1"
+  ["shell.omz"]="1"
   ["cli.modern"]="1"
   ["network.tailscale"]="1"
   ["lang.bun"]="1"

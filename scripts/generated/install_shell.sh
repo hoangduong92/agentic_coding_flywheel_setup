@@ -54,31 +54,31 @@ acfs_security_init() {
 }
 
 # Category: shell
-# Modules: 1
+# Modules: 2
 
-# Zsh + Oh My Zsh + Powerlevel10k + plugins + canonical ACFS zshrc
+# Zsh shell package
 install_shell_zsh() {
     local module_id="shell.zsh"
     acfs_require_contract "module:${module_id}" || return 1
     log_step "Installing shell.zsh"
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "dry-run: install: sudo apt-get install -y zsh (target_user)"
+        log_info "dry-run: install: apt-get install -y zsh (root)"
     else
-        if ! run_as_target_shell <<'INSTALL_SHELL_ZSH'
-sudo apt-get install -y zsh
+        if ! run_as_root_shell <<'INSTALL_SHELL_ZSH'
+apt-get install -y zsh
 INSTALL_SHELL_ZSH
         then
-            log_error "shell.zsh: install command failed: sudo apt-get install -y zsh"
+            log_error "shell.zsh: install command failed: apt-get install -y zsh"
             return 1
         fi
     fi
 
     # Verify
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "dry-run: verify: zsh --version (target_user)"
+        log_info "dry-run: verify: zsh --version (root)"
     else
-        if ! run_as_target_shell <<'INSTALL_SHELL_ZSH'
+        if ! run_as_root_shell <<'INSTALL_SHELL_ZSH'
 zsh --version
 INSTALL_SHELL_ZSH
         then
@@ -86,25 +86,163 @@ INSTALL_SHELL_ZSH
             return 1
         fi
     fi
+
+    log_success "shell.zsh installed"
+}
+
+# Oh My Zsh + Powerlevel10k + plugins + ACFS config
+install_shell_omz() {
+    local module_id="shell.omz"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing shell.omz"
+
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "dry-run: verify: test -f ~/.acfs/zsh/acfs.zshrc (target_user)"
+        log_info "dry-run: verified installer: shell.omz"
     else
-        if ! run_as_target_shell <<'INSTALL_SHELL_ZSH'
-test -f ~/.acfs/zsh/acfs.zshrc
-INSTALL_SHELL_ZSH
+        if ! {
+            # Verified upstream installer script (checksums.yaml)
+            if ! acfs_security_init; then
+                log_error "Security verification unavailable for shell.omz"
+                false
+            else
+                local tool="ohmyzsh"
+                local url="${KNOWN_INSTALLERS[$tool]:-}"
+                local expected_sha256
+                expected_sha256="$(get_checksum "$tool")"
+                if [[ -z "$url" ]] || [[ -z "$expected_sha256" ]]; then
+                    log_error "Missing checksum entry for $tool"
+                    false
+                else
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'sh' '--' '--unattended' '--keep-zshrc'
+                fi
+            fi
+        }; then
+            log_error "shell.omz: verified installer failed"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: # Install Powerlevel10k (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_SHELL_OMZ'
+# Install Powerlevel10k
+if [[ ! -d ~/.oh-my-zsh/custom/themes/powerlevel10k ]]; then
+  git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/.oh-my-zsh/custom/themes/powerlevel10k
+fi
+INSTALL_SHELL_OMZ
         then
-            log_error "shell.zsh: verify failed: test -f ~/.acfs/zsh/acfs.zshrc"
+            log_error "shell.omz: install command failed: # Install Powerlevel10k"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: # Install zsh-autosuggestions (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_SHELL_OMZ'
+# Install zsh-autosuggestions
+if [[ ! -d ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions ]]; then
+  git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+fi
+INSTALL_SHELL_OMZ
+        then
+            log_error "shell.omz: install command failed: # Install zsh-autosuggestions"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: # Install zsh-syntax-highlighting (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_SHELL_OMZ'
+# Install zsh-syntax-highlighting
+if [[ ! -d ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting ]]; then
+  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+fi
+INSTALL_SHELL_OMZ
+        then
+            log_error "shell.omz: install command failed: # Install zsh-syntax-highlighting"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: # Install ACFS zshrc (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_SHELL_OMZ'
+# Install ACFS zshrc
+ACFS_RAW="${ACFS_RAW:-https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main}"
+mkdir -p ~/.acfs/zsh
+curl --proto '=https' --proto-redir '=https' -fsSL -o ~/.acfs/zsh/acfs.zshrc "${ACFS_RAW}/acfs/zsh/acfs.zshrc"
+INSTALL_SHELL_OMZ
+        then
+            log_error "shell.omz: install command failed: # Install ACFS zshrc"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: # Setup loader .zshrc (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_SHELL_OMZ'
+# Setup loader .zshrc
+if [[ -f ~/.zshrc ]] && ! grep -q "ACFS loader" ~/.zshrc; then
+  mv ~/.zshrc ~/.zshrc.bak.$(date +%s)
+fi
+echo '# ACFS loader' > ~/.zshrc
+echo 'source "$HOME/.acfs/zsh/acfs.zshrc"' >> ~/.zshrc
+echo '' >> ~/.zshrc
+echo '# User overrides live here forever' >> ~/.zshrc
+echo '[ -f "$HOME/.zshrc.local" ] && source "$HOME/.zshrc.local"' >> ~/.zshrc
+INSTALL_SHELL_OMZ
+        then
+            log_error "shell.omz: install command failed: # Setup loader .zshrc"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: # Set default shell (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_SHELL_OMZ'
+# Set default shell
+if [[ "$SHELL" != */zsh ]]; then
+  sudo chsh -s "$(which zsh)" "$(whoami)"
+fi
+INSTALL_SHELL_OMZ
+        then
+            log_error "shell.omz: install command failed: # Set default shell"
             return 1
         fi
     fi
 
-    log_success "shell.zsh installed"
+    # Verify
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: verify: test -d ~/.oh-my-zsh (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_SHELL_OMZ'
+test -d ~/.oh-my-zsh
+INSTALL_SHELL_OMZ
+        then
+            log_error "shell.omz: verify failed: test -d ~/.oh-my-zsh"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: verify: test -f ~/.acfs/zsh/acfs.zshrc (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_SHELL_OMZ'
+test -f ~/.acfs/zsh/acfs.zshrc
+INSTALL_SHELL_OMZ
+        then
+            log_error "shell.omz: verify failed: test -f ~/.acfs/zsh/acfs.zshrc"
+            return 1
+        fi
+    fi
+
+    log_success "shell.omz installed"
 }
 
 # Install all shell modules
 install_shell() {
     log_section "Installing shell modules"
     install_shell_zsh
+    install_shell_omz
 }
 
 # Run if executed directly

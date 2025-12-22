@@ -79,7 +79,7 @@ install_lang_bun() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | bash
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash'
                 fi
             fi
         }; then
@@ -127,7 +127,7 @@ install_lang_uv() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | sh
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'sh'
                 fi
             fi
         }; then
@@ -175,7 +175,7 @@ install_lang_rust() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | sh '-s' '--' '-y'
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'sh' '-s' '--' '-y'
                 fi
             fi
         }; then

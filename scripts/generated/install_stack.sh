@@ -79,7 +79,7 @@ install_stack_ntm() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | bash
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash'
                 fi
             fi
         }; then
@@ -127,7 +127,7 @@ install_stack_mcp_agent_mail() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | bash '--yes'
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '--yes'
                 fi
             fi
         }; then
@@ -185,7 +185,7 @@ install_stack_ultimate_bug_scanner() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | bash '--easy-mode'
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '--easy-mode'
                 fi
             fi
         }; then
@@ -243,7 +243,7 @@ install_stack_beads_viewer() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | bash
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash'
                 fi
             fi
         }; then
@@ -291,7 +291,7 @@ install_stack_cass() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | bash '--easy-mode' '--verify'
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '--easy-mode' '--verify'
                 fi
             fi
         }; then
@@ -339,7 +339,7 @@ install_stack_cm() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | bash '--easy-mode' '--verify'
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '--easy-mode' '--verify'
                 fi
             fi
         }; then
@@ -397,7 +397,7 @@ install_stack_caam() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | bash
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash'
                 fi
             fi
         }; then
@@ -445,7 +445,7 @@ install_stack_slb() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | bash
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash'
                 fi
             fi
         }; then

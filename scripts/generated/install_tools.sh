@@ -79,7 +79,7 @@ install_tools_atuin() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | sh
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'sh'
                 fi
             fi
         }; then
@@ -127,7 +127,7 @@ install_tools_zoxide() {
                     log_error "Missing checksum entry for $tool"
                     false
                 else
-                    verify_checksum "$url" "$expected_sha256" "$tool" | sh
+                    verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'sh'
                 fi
             fi
         }; then

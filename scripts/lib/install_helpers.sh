@@ -521,6 +521,23 @@ run_as_target_shell() {
     run_as_target bash -lc 'set -euo pipefail; (printf "%s\n" "set -euo pipefail"; cat) | bash -s'
 }
 
+# Run a runner (bash, sh) with args as TARGET_USER, passing stdin
+# Usage: echo script | run_as_target_runner "bash" "-s" "--" "arg1"
+run_as_target_runner() {
+    local runner="$1"
+    shift
+    
+    if ! declare -f run_as_target >/dev/null 2>&1; then
+        log_error "run_as_target_runner requires run_as_target"
+        return 1
+    fi
+
+    # Pass args directly to run_as_target, which handles quoting
+    # run_as_target will invoke: su - user -c "runner args..."
+    # stdin is passed through su to the runner
+    run_as_target "$runner" "$@"
+}
+
 # Run a shell string (or stdin) as root
 run_as_root_shell() {
     local cmd="${1:-}"

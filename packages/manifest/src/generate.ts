@@ -387,7 +387,21 @@ function sortModulesByPhaseAndDependency(manifest: Manifest): Module[] {
 function generateVerifiedInstallerSnippet(module: Module): string[] {
   const vi = module.verified_installer!;
   const tool = vi.tool;
-  const pipe = buildVerifiedInstallerPipe(module);
+  
+  let execCmd: string;
+  if (module.run_as === 'target_user') {
+    // Use run_as_target_runner to switch user while preserving stdin
+    const parts = ['run_as_target_runner', shellQuote(vi.runner)];
+    if (vi.args) {
+      for (const arg of vi.args) {
+        parts.push(shellQuote(arg));
+      }
+    }
+    execCmd = parts.join(' ');
+  } else {
+    // Default/root: run directly
+    execCmd = buildVerifiedInstallerPipe(module);
+  }
 
   return [
     '# Verified upstream installer script (checksums.yaml)',
@@ -403,7 +417,7 @@ function generateVerifiedInstallerSnippet(module: Module): string[] {
     '        log_error "Missing checksum entry for $tool"',
     '        false',
     '    else',
-    `        verify_checksum "$url" "$expected_sha256" "$tool" | ${pipe}`,
+    `        verify_checksum "$url" "$expected_sha256" "$tool" | ${execCmd}`,
     '    fi',
     'fi',
   ];

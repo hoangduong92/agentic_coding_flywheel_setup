@@ -84,10 +84,10 @@ modules:
   # PHASE 4: Shell setup (zsh + oh-my-zsh + p10k)
   # ============================================================
   - id: shell.zsh
-    description: Zsh + Oh My Zsh + Powerlevel10k + plugins + canonical ACFS zshrc
+    description: Zsh shell package
     category: shell
     phase: 4
-    run_as: target_user
+    run_as: root
     optional: false
     enabled_by_default: true
     tags: [critical, shell-ux]
@@ -95,12 +95,68 @@ modules:
       - base.system
       - base.filesystem
     installed_check:
-      run_as: target_user
-      command: "command -v zsh && test -f ~/.acfs/zsh/acfs.zshrc"
+      run_as: current
+      command: "command -v zsh"
     install:
-      - sudo apt-get install -y zsh
+      - apt-get install -y zsh
     verify:
       - zsh --version
+
+  - id: shell.omz
+    description: Oh My Zsh + Powerlevel10k + plugins + ACFS config
+    category: shell
+    phase: 4
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [critical, shell-ux]
+    dependencies:
+      - shell.zsh
+    installed_check:
+      run_as: target_user
+      command: "test -d ~/.oh-my-zsh && test -f ~/.acfs/zsh/acfs.zshrc"
+    verified_installer:
+      tool: ohmyzsh
+      runner: sh
+      args: ["--", "--unattended", "--keep-zshrc"]
+    install:
+      - |
+        # Install Powerlevel10k
+        if [[ ! -d ~/.oh-my-zsh/custom/themes/powerlevel10k ]]; then
+          git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/.oh-my-zsh/custom/themes/powerlevel10k
+        fi
+      - |
+        # Install zsh-autosuggestions
+        if [[ ! -d ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions ]]; then
+          git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+        fi
+      - |
+        # Install zsh-syntax-highlighting
+        if [[ ! -d ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting ]]; then
+          git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+        fi
+      - |
+        # Install ACFS zshrc
+        ACFS_RAW="${ACFS_RAW:-https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main}"
+        mkdir -p ~/.acfs/zsh
+        curl --proto '=https' --proto-redir '=https' -fsSL -o ~/.acfs/zsh/acfs.zshrc "${ACFS_RAW}/acfs/zsh/acfs.zshrc"
+      - |
+        # Setup loader .zshrc
+        if [[ -f ~/.zshrc ]] && ! grep -q "ACFS loader" ~/.zshrc; then
+          mv ~/.zshrc ~/.zshrc.bak.$(date +%s)
+        fi
+        echo '# ACFS loader' > ~/.zshrc
+        echo 'source "$HOME/.acfs/zsh/acfs.zshrc"' >> ~/.zshrc
+        echo '' >> ~/.zshrc
+        echo '# User overrides live here forever' >> ~/.zshrc
+        echo '[ -f "$HOME/.zshrc.local" ] && source "$HOME/.zshrc.local"' >> ~/.zshrc
+      - |
+        # Set default shell
+        if [[ "$SHELL" != */zsh ]]; then
+          sudo chsh -s "$(which zsh)" "$(whoami)"
+        fi
+    verify:
+      - test -d ~/.oh-my-zsh
       - test -f ~/.acfs/zsh/acfs.zshrc
     notes:
       - "Oh My Zsh and plugins installed via verified upstream installers"
