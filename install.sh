@@ -41,6 +41,7 @@ ACFS_REPO_OWNER="Dicklesworthstone"
 ACFS_REPO_NAME="agentic_coding_flywheel_setup"
 ACFS_REF="${ACFS_REF:-main}"
 ACFS_RAW="https://raw.githubusercontent.com/${ACFS_REPO_OWNER}/${ACFS_REPO_NAME}/${ACFS_REF}"
+export ACFS_RAW ACFS_VERSION
 ACFS_COMMIT_SHA=""  # Will be fetched from GitHub API
 # Note: ACFS_HOME is set after TARGET_HOME is determined
 ACFS_LOG_DIR="/var/log/acfs"
@@ -290,16 +291,27 @@ fetch_commit_sha() {
     local response
 
     if response=$(curl -sf --max-time 5 "$api_url" 2>/dev/null); then
-        # Extract SHA from JSON using grep/sed (works without jq)
-        local sha
-        sha=$(echo "$response" | grep -m1 '"sha"' | sed 's/.*"sha"[[:space:]]*:[[:space:]]*"\([a-f0-9]*\)".*/\1/' | head -c 12)
-        if [[ -n "$sha" && ${#sha} -ge 7 ]]; then
-            ACFS_COMMIT_SHA="$sha"
+        # Try to use python3 for robust JSON parsing if available
+        local sha=""
+        local commit_date=""
+        
+        if command -v python3 &>/dev/null; then
+            # Python parsing - robust against JSON formatting changes
+            sha=$(echo "$response" | python3 -c "import sys, json; print(json.load(sys.stdin).get('sha', ''))" 2>/dev/null)
+            commit_date=$(echo "$response" | python3 -c "import sys, json; print(json.load(sys.stdin).get('commit', {}).get('author', {}).get('date', ''))" 2>/dev/null)
+        else
+            # Fallback: Extract SHA from JSON using grep/sed (works without jq/python)
+            # Use grep -o to handle minified JSON (puts matches on new lines)
+            sha=$(echo "$response" | grep -o '"sha":[[:space:]]*"[^"]*"' | head -n 1 | sed 's/.*"\([a-f0-9]*\)".*/\1/' | head -c 12)
+            
+            # Extract commit date (format: "2025-12-21T10:30:00Z")
+            commit_date=$(echo "$response" | grep -o '"date":[[:space:]]*"[^"]*"' | head -n 1 | sed 's/.*"\([^"]*\)".*/\1/')
         fi
 
-        # Extract commit date (format: "2025-12-21T10:30:00Z")
-        local commit_date
-        commit_date=$(echo "$response" | grep -m1 '"date"' | sed 's/.*"date"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+        if [[ -n "$sha" && ${#sha} -ge 7 ]]; then
+            ACFS_COMMIT_SHA="${sha:0:12}"
+        fi
+
         if [[ -n "$commit_date" ]]; then
             ACFS_COMMIT_DATE="$commit_date"
             # Calculate age
@@ -1593,6 +1605,16 @@ run_ubuntu_upgrade_phase() {
     if [[ "$ID" != "ubuntu" ]]; then
         log_detail "Not Ubuntu (detected: $ID), skipping upgrade"
         return 0
+    fi
+
+    # CRITICAL: Ensure jq is installed for state tracking (state.sh depends on it).
+    if ! command -v jq &>/dev/null; then
+        log_detail "Installing jq for upgrade state tracking..."
+        if [[ $EUID -eq 0 ]]; then
+            apt-get update -qq && apt-get install -y jq >/dev/null 2>&1 || true
+        elif command -v sudo &>/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y jq >/dev/null 2>&1 || true
+        fi
     fi
 
     # Source upgrade library
