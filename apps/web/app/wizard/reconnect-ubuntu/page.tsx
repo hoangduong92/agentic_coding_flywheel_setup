@@ -6,7 +6,7 @@ import { RefreshCw, Check, UserCheck, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CommandCard } from "@/components/command-card";
-import { OutputPreview } from "@/components/alert-card";
+import { AlertCard, OutputPreview } from "@/components/alert-card";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useVPSIP } from "@/lib/userPreferences";
 import { withCurrentSearch } from "@/lib/utils";
@@ -126,6 +126,26 @@ export default function ReconnectUbuntuPage() {
           <p className="text-sm text-muted-foreground">
             2. Reconnect as ubuntu:
           </p>
+
+          <div className="space-y-3">
+            <h3 className="font-semibold">Notice something different?</h3>
+            <p className="text-sm text-muted-foreground">
+              This SSH command uses your SSH key (the{" "}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                -i ~/.ssh/acfs_ed25519
+              </code>{" "}
+              part — or on Windows{" "}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                -i $HOME\\.ssh\\acfs_ed25519
+              </code>
+              ) instead of a password. The installer set this up for you.
+            </p>
+            <AlertCard variant="success" title="No password needed!">
+              When you run this command, you should connect immediately without typing a password.
+              SSH keys are more secure <strong>and</strong> more convenient.
+            </AlertCard>
+          </div>
+
           <CommandCard
             command={sshCommand}
             windowsCommand={sshCommandWindows}

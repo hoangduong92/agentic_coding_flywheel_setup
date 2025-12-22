@@ -256,6 +256,29 @@ export default function SSHConnectPage() {
         </p>
       </OutputPreview>
 
+      {/* Post-connection verification */}
+      <div className="space-y-3">
+        <h3 className="font-semibold">Verify you&apos;re on the VPS</h3>
+        <p className="text-muted-foreground">
+          Try this command to confirm you&apos;re controlling the VPS, not your laptop:
+        </p>
+        <CommandCard
+          command="hostname"
+          description="Show this computer's name"
+        />
+        <OutputPreview title="You should see something like:">
+          <p className="text-[oklch(0.72_0.19_145)]">vps-12345</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            (Your VPS hostname — not your laptop&apos;s name like &quot;MacBook-Pro&quot; or &quot;DESKTOP-ABC123&quot;)
+          </p>
+        </OutputPreview>
+        <AlertCard variant="info">
+          <strong>You&apos;re now remote-controlling the VPS!</strong> Everything you type happens on the VPS.
+          If you type <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">ls</code>, you see VPS files.
+          If you install something, it installs on the VPS. Your laptop is just the remote control.
+        </AlertCard>
+      </div>
+
       {/* Troubleshooting */}
       <div className="space-y-3">
         <h2 className="font-semibold">Having trouble?</h2>

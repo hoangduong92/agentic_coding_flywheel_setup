@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { PartyPopper, BookOpen, ExternalLink, Sparkles, ArrowRight, GraduationCap, Terminal, RefreshCw } from "lucide-react";
+import { PartyPopper, BookOpen, ExternalLink, Sparkles, ArrowRight, GraduationCap, Terminal, RefreshCw, FolderPlus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CommandCard } from "@/components/command-card";
 import { markStepComplete, setCompletedSteps, TOTAL_STEPS } from "@/lib/wizardSteps";
@@ -243,6 +243,50 @@ export default function LaunchOnboardingPage() {
           <p className="text-sm font-medium">
             💡 <strong>Remember:</strong> Connect → Session → Code → Detach
           </p>
+        </div>
+      </Card>
+
+      {/* Starting a New Project - How to begin real work */}
+      <Card className="border-[oklch(0.75_0.18_195/0.3)] bg-[oklch(0.75_0.18_195/0.05)] p-6">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <FolderPlus className="h-5 w-5 text-[oklch(0.75_0.18_195)]" />
+            <h2 className="text-xl font-semibold">Starting a New Project</h2>
+          </div>
+          <p className="text-muted-foreground">
+            Ready to build something? Here&apos;s the pattern:
+          </p>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          <div className="space-y-2">
+            <h3 className="font-medium">1. Create a session for your project</h3>
+            <CommandCard command="ntm new my-awesome-app" />
+            <p className="text-sm text-muted-foreground">
+              This creates a persistent workspace named &quot;my-awesome-app&quot;.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-medium">2. Create and navigate to a project folder</h3>
+            <CommandCard command="mkdir ~/projects/my-awesome-app && cd ~/projects/my-awesome-app" />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-medium">3. Start Claude and describe your project</h3>
+            <CommandCard command="cc" />
+            <p className="text-sm text-muted-foreground">
+              Tell Claude what you want to build. For example:
+            </p>
+            <div className="rounded-lg bg-muted px-4 py-3 font-mono text-sm">
+              &quot;Create a React app with TypeScript that shows a todo list&quot;
+            </div>
+          </div>
+
+          <GuideTip>
+            Claude will set up the project structure, install dependencies, and start
+            building. You can guide it step by step or give it the whole vision at once.
+          </GuideTip>
         </div>
       </Card>
 
