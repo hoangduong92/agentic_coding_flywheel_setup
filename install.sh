@@ -1566,6 +1566,15 @@ run_ubuntu_upgrade_phase() {
             log_info "  - tail -f /var/log/acfs/upgrade_resume.log"
             return 0
             ;;
+        pre_upgrade_reboot)
+            # We just rebooted to clear pending package updates
+            log_success "Pre-upgrade reboot complete. Continuing with upgrade..."
+            # Clear the stage so we proceed normally
+            if type -t state_update &>/dev/null; then
+                state_update ".ubuntu_upgrade.stage = \"not_started\""
+            fi
+            # Fall through to continue with upgrade
+            ;;
         error)
             log_error "Previous Ubuntu upgrade attempt failed (stage: error)"
             log_error "Check logs:"
@@ -1615,6 +1624,57 @@ run_ubuntu_upgrade_phase() {
             log_info "Ubuntu upgrade skipped by user"
             log_info "Continuing with ACFS installation on Ubuntu $current_version_str"
             return 0
+        fi
+    fi
+
+    # Check if system requires reboot before upgrade (package updates pending)
+    # This must be handled before preflight checks, otherwise do-release-upgrade fails
+    if [[ -f /var/run/reboot-required ]]; then
+        log_warn "System requires reboot before upgrade can proceed"
+        if [[ -f /var/run/reboot-required.pkgs ]]; then
+            log_detail "Packages requiring reboot: $(cat /var/run/reboot-required.pkgs | tr '\n' ' ')"
+        fi
+
+        if [[ "$YES_MODE" == "true" ]]; then
+            log_info "Automatically rebooting to clear pending updates..."
+
+            # Initialize state file early for tracking
+            mkdir -p "${ACFS_RESUME_DIR:-/var/lib/acfs}"
+            if type -t state_ensure_valid &>/dev/null; then
+                state_ensure_valid || true
+            fi
+            if type -t state_init &>/dev/null; then
+                state_load >/dev/null 2>&1 || state_init || true
+            fi
+
+            # Set stage so we know to continue after reboot
+            if type -t state_update &>/dev/null; then
+                state_update ".ubuntu_upgrade.stage = \"pre_upgrade_reboot\""
+            fi
+
+            # Set up resume infrastructure
+            local acfs_source_dir=""
+            if [[ -n "${SCRIPT_DIR:-}" ]] && [[ -d "$SCRIPT_DIR" ]]; then
+                acfs_source_dir="$SCRIPT_DIR"
+            elif [[ -n "${ACFS_BOOTSTRAP_DIR:-}" ]] && [[ -d "$ACFS_BOOTSTRAP_DIR" ]]; then
+                acfs_source_dir="$ACFS_BOOTSTRAP_DIR"
+            fi
+
+            if [[ -n "$acfs_source_dir" ]] && type -t upgrade_setup_infrastructure &>/dev/null; then
+                upgrade_setup_infrastructure "$acfs_source_dir" "$@"
+            fi
+
+            # Trigger reboot
+            log_warn "Rebooting in 10 seconds... Reconnect via SSH after reboot."
+            log_info "The upgrade will continue automatically after reboot."
+            sleep 10
+            shutdown -r now "ACFS: Rebooting to apply pending updates before Ubuntu upgrade"
+            exit 0
+        else
+            log_error "Manual action required: reboot the system first"
+            log_info "Run: sudo reboot"
+            log_info "Then re-run the ACFS installer"
+            return 1
         fi
     fi
 

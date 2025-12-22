@@ -201,13 +201,14 @@ ubuntu_get_next_upgrade() {
 # Get next upgrade version from hardcoded path
 # Fallback when do-release-upgrade -c doesn't work (e.g., network issues)
 # This function knows the Ubuntu release schedule
+# NOTE: EOL releases are skipped (e.g., 24.10 is EOL as of late 2025)
 ubuntu_get_next_version_hardcoded() {
     local current="$1"
 
     case "$current" in
         2204) echo "24.04" ;;  # LTS to LTS
-        2404) echo "24.10" ;;  # LTS to next
-        2410) echo "25.04" ;;
+        2404) echo "25.04" ;;  # 24.04 → 25.04 (skip 24.10, it's EOL)
+        2410) echo "25.04" ;;  # If somehow on 24.10, go to 25.04
         2504) echo "25.10" ;;
         *) return 1 ;;  # Unknown version
     esac
@@ -306,6 +307,11 @@ ubuntu_preflight_checks() {
 
     # Check apt state
     if ! ubuntu_check_apt_state; then
+        ((failed++))
+    fi
+
+    # Check if reboot is required (critical - do-release-upgrade will fail)
+    if ! ubuntu_check_reboot_required; then
         ((failed++))
     fi
 
@@ -416,6 +422,27 @@ ubuntu_check_recent_boot() {
     fi
 
     log_detail "System stability: uptime ${uptime_seconds}s"
+    return 0
+}
+
+# Check if system requires reboot before upgrade can proceed
+# do-release-upgrade will refuse to run if reboot is required
+ubuntu_check_reboot_required() {
+    if [[ -f /var/run/reboot-required ]]; then
+        local pkgs=""
+        if [[ -f /var/run/reboot-required.pkgs ]]; then
+            pkgs=$(cat /var/run/reboot-required.pkgs | tr '\n' ' ')
+        fi
+        log_error "System requires reboot before upgrade"
+        if [[ -n "$pkgs" ]]; then
+            log_detail "Packages requiring reboot: $pkgs"
+        fi
+        log_detail "Run: sudo reboot"
+        log_detail "Then re-run ACFS installer after reboot"
+        return 1
+    fi
+
+    log_detail "Reboot status: no pending reboot required"
     return 0
 }
 

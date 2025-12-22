@@ -254,8 +254,7 @@ check_network_installers() {
     fi
 
     # Test key installer URLs (warnings, not failures)
-    # Use GET with range request and longer timeout for VPS compatibility
-    # Some servers don't support HEAD or have slow first-byte times
+    # Use simple GET with HTTP status check - most reliable across VPS providers
     local urls=(
         "https://bun.sh/install:Bun installer"
         "https://astral.sh/uv/install.sh:UV/Python installer"
@@ -270,14 +269,16 @@ check_network_installers() {
         local url="${entry%%:*}"
         local name="${entry##*:}"
 
-        # Use GET with output to /dev/null; -L follows redirects; longer timeout for slow VPS
-        # Range header fetches only first byte (fast); fallback to full GET if range not supported
-        if ! curl -sfL --max-time 10 --connect-timeout 5 -r 0-0 "$url" -o /dev/null 2>&1; then
-            # Retry without range header in case server doesn't support it
-            if ! curl -sfL --max-time 10 --connect-timeout 5 "$url" -o /dev/null 2>&1; then
-                all_ok=false
-                failed_urls+=("$name")
-            fi
+        # Simple check: follow redirects, get HTTP status, 15s timeout
+        # We just need to verify the URL is reachable, not download the content
+        local http_status
+        http_status=$(curl -sL --max-time 15 --connect-timeout 10 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null) || http_status="000"
+
+        if [[ "$http_status" -ge 200 && "$http_status" -lt 400 ]]; then
+            : # Success
+        else
+            all_ok=false
+            failed_urls+=("$name")
         fi
     done
 
