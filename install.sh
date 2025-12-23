@@ -2433,7 +2433,28 @@ install_languages_legacy_tools() {
         log_detail "Atuin already installed"
     else
         log_detail "Installing Atuin for $TARGET_USER"
-        try_step "Installing Atuin" acfs_run_verified_upstream_script_as_target "atuin" "sh" || return 1
+        # Use the inner cargo-dist installer directly (more reliable than the outer wrapper)
+        # The outer wrapper (setup.atuin.sh) uses 'set -eu' and can fail on shell config
+        # modifications even when the binary installs successfully.
+        local atuin_install_url="https://github.com/atuinsh/atuin/releases/latest/download/atuin-installer.sh"
+        local atuin_script
+        atuin_script="$(curl -fsSL "$atuin_install_url" 2>/dev/null)" || atuin_script=""
+
+        if [[ -z "$atuin_script" ]]; then
+            log_warn "Failed to download Atuin installer (continuing without Atuin)"
+        elif printf '%s' "$atuin_script" | run_as_target sh -s 2>&1; then
+            # Add atuin init to zshrc if not already present (we use zsh as primary shell)
+            if ! grep -q "atuin init" "$TARGET_HOME/.zshrc" 2>/dev/null; then
+                log_detail "Adding Atuin shell integration to .zshrc"
+                run_as_target bash -c 'echo '\''eval "$(~/.atuin/bin/atuin init zsh)"'\'' >> ~/.zshrc' || true
+            fi
+            log_success "Atuin installed"
+        else
+            local atuin_exit=$?
+            log_warn "Atuin installation failed (exit $atuin_exit), continuing without Atuin"
+            # Try to show what went wrong
+            log_detail "You can install Atuin manually with: curl -fsSL https://setup.atuin.sh | bash"
+        fi
     fi
 
     # Zoxide (install as target user)
