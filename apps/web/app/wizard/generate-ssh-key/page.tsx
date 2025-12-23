@@ -85,6 +85,29 @@ export default function GenerateSSHKeyPage() {
         Think of it like a lock and key: you share the lock, but only you have the key.
       </AlertCard>
 
+      {/* ~/.ssh folder explanation */}
+      <AlertCard variant="default" title="Where are SSH keys stored?">
+        <p className="mb-2">
+          SSH keys are stored in a special folder called <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">~/.ssh</code> on your computer.
+        </p>
+        <ul className="space-y-1 text-sm">
+          <li>
+            <strong className="text-foreground">On {os === "mac" ? "Mac" : "Windows"}:</strong>{" "}
+            {os === "mac" ? (
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">/Users/yourname/.ssh/</code>
+            ) : (
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">C:\\Users\\yourname\\.ssh\\</code>
+            )}
+          </li>
+          <li className="text-muted-foreground">
+            The <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">~</code> symbol is shorthand for your home folder.
+          </li>
+          <li className="text-muted-foreground">
+            The <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">.</code> prefix makes it a hidden folder (that&apos;s normal for config files).
+          </li>
+        </ul>
+      </AlertCard>
+
       {/* Privacy assurance */}
       <div className="flex gap-3 rounded-xl border border-[oklch(0.72_0.19_145/0.25)] bg-[oklch(0.72_0.19_145/0.05)] p-3 sm:p-4">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[oklch(0.72_0.19_145/0.15)] sm:h-9 sm:w-9">
@@ -114,9 +137,15 @@ export default function GenerateSSHKeyPage() {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Step 1: Generate the key</h2>
         <p className="text-sm text-muted-foreground">
-          Run this command in your <Jargon term="terminal">terminal</Jargon>. Press <strong>Enter</strong> twice
-          when asked for a passphrase (leave it empty for now).
+          Run this command in your <Jargon term="terminal">terminal</Jargon>. You&apos;ll be asked 3 questions—here&apos;s how to answer:
         </p>
+        <div className="rounded-lg border border-border/50 bg-muted/30 p-3 text-sm">
+          <div className="space-y-2">
+            <p><strong className="text-foreground">1. File location:</strong> <span className="text-muted-foreground">Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Enter</kbd> to accept the default</span></p>
+            <p><strong className="text-foreground">2. Passphrase:</strong> <span className="text-muted-foreground">Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Enter</kbd> (leave empty)</span></p>
+            <p><strong className="text-foreground">3. Confirm passphrase:</strong> <span className="text-muted-foreground">Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Enter</kbd> again</span></p>
+          </div>
+        </div>
         <CommandCard
           command='ssh-keygen -t ed25519 -C "acfs" -f ~/.ssh/acfs_ed25519'
           windowsCommand='ssh-keygen -t ed25519 -C "acfs" -f $HOME\\.ssh\\acfs_ed25519'
