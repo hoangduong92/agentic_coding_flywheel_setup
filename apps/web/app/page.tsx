@@ -751,7 +751,7 @@ function WhatDoesThisCostSection() {
         </motion.div>
 
         <motion.div className="mt-10 text-center" initial={{ opacity: 0, y: 10 }} animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }} transition={{ ...springs.smooth, delay: 0.5 }}>
-          <p className="mb-6 max-w-2xl mx-auto text-muted-foreground">Consider: a junior developer costs $5,000+/month. For under $700, you get <strong className="text-foreground">three AI agents</strong> working 24/7, writing code while you sleep.</p>
+          <p className="mb-6 max-w-2xl mx-auto text-muted-foreground">Consider: a junior developer costs $5,000+/month. For under $700, you get <strong className="text-foreground">10+ AI agents</strong> working 24/7, writing code while you sleep.</p>
           <Button asChild size="lg" className="bg-primary text-primary-foreground">
             <Link href="/wizard/os-selection">Start Your Setup<ArrowRight className="ml-2 h-4 w-4" /></Link>
           </Button>
