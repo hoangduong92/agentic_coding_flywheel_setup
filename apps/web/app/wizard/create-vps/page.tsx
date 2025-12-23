@@ -335,7 +335,7 @@ export default function CreateVPSPage() {
             </div>
             <div className="rounded-lg bg-background/50 px-3 py-2">
               <span className="font-medium text-foreground">🌏 Asia-Pacific:</span>{" "}
-              <span className="text-muted-foreground">Pick Singapore or Australia</span>
+              <span className="text-muted-foreground">Pick Singapore, Sydney, or Tokyo</span>
             </div>
             <div className="rounded-lg bg-background/50 px-3 py-2">
               <span className="font-medium text-foreground">🤷 Unsure?</span>{" "}
