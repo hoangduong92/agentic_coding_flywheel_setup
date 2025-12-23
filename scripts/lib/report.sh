@@ -260,14 +260,20 @@ report_failure_json() {
         mkdir -p "$log_dir" 2>/dev/null || true
     fi
 
-    # Generate JSON (use jq if available for proper escaping)
-    local json_entry
+    # Normalize numeric fields for JSON (avoid jq failures / invalid JSON when unknown).
+    local phase_num_json="$phase_num"
+    local total_phases_json="$total_phases"
+    [[ "$phase_num_json" =~ ^[0-9]+$ ]] || phase_num_json="null"
+    [[ "$total_phases_json" =~ ^[0-9]+$ ]] || total_phases_json="null"
+
+    # Generate JSON (prefer jq for proper escaping; fall back to manual escaping)
+    local json_entry=""
     if command -v jq &>/dev/null; then
         json_entry=$(jq -n \
             --arg type "failure" \
             --arg timestamp "$(date -Iseconds)" \
-            --argjson phase_num "$phase_num" \
-            --argjson total_phases "$total_phases" \
+            --argjson phase_num "$phase_num_json" \
+            --argjson total_phases "$total_phases_json" \
             --arg phase "$phase" \
             --arg phase_name "$phase_name" \
             --arg step "$step" \
@@ -293,9 +299,52 @@ report_failure_json() {
                     output: $error_output,
                     suggested_fix: $suggested_fix
                 }
-            }')
-    else
-        # Manual JSON without jq (basic escaping)
+            }' 2>/dev/null) || json_entry=""
+    fi
+
+    if [[ -z "$json_entry" ]]; then
+        # Manual JSON without jq (basic escaping for all string fields)
+        local timestamp
+        timestamp="$(date -Iseconds)"
+
+        local escaped_timestamp="${timestamp//\\/\\\\}"
+        escaped_timestamp="${escaped_timestamp//\"/\\\"}"
+        escaped_timestamp="${escaped_timestamp//$'\n'/\\n}"
+        escaped_timestamp="${escaped_timestamp//$'\r'/\\r}"
+        escaped_timestamp="${escaped_timestamp//$'\t'/\\t}"
+
+        local escaped_version="${ACFS_VERSION:-0.1.0}"
+        escaped_version="${escaped_version//\\/\\\\}"
+        escaped_version="${escaped_version//\"/\\\"}"
+        escaped_version="${escaped_version//$'\n'/\\n}"
+        escaped_version="${escaped_version//$'\r'/\\r}"
+        escaped_version="${escaped_version//$'\t'/\\t}"
+
+        local escaped_mode="${MODE:-unknown}"
+        escaped_mode="${escaped_mode//\\/\\\\}"
+        escaped_mode="${escaped_mode//\"/\\\"}"
+        escaped_mode="${escaped_mode//$'\n'/\\n}"
+        escaped_mode="${escaped_mode//$'\r'/\\r}"
+        escaped_mode="${escaped_mode//$'\t'/\\t}"
+
+        local escaped_phase="${phase//\\/\\\\}"
+        escaped_phase="${escaped_phase//\"/\\\"}"
+        escaped_phase="${escaped_phase//$'\n'/\\n}"
+        escaped_phase="${escaped_phase//$'\r'/\\r}"
+        escaped_phase="${escaped_phase//$'\t'/\\t}"
+
+        local escaped_phase_name="${phase_name//\\/\\\\}"
+        escaped_phase_name="${escaped_phase_name//\"/\\\"}"
+        escaped_phase_name="${escaped_phase_name//$'\n'/\\n}"
+        escaped_phase_name="${escaped_phase_name//$'\r'/\\r}"
+        escaped_phase_name="${escaped_phase_name//$'\t'/\\t}"
+
+        local escaped_step="${step//\\/\\\\}"
+        escaped_step="${escaped_step//\"/\\\"}"
+        escaped_step="${escaped_step//$'\n'/\\n}"
+        escaped_step="${escaped_step//$'\r'/\\r}"
+        escaped_step="${escaped_step//$'\t'/\\t}"
+
         local escaped_error="${error//\\/\\\\}"
         escaped_error="${escaped_error//\"/\\\"}"
         escaped_error="${escaped_error//$'\n'/\\n}"
@@ -315,7 +364,7 @@ report_failure_json() {
         escaped_fix="${escaped_fix//$'\t'/\\t}"
 
         json_entry=$(cat <<EOF
-{"type":"failure","timestamp":"$(date -Iseconds)","version":"${ACFS_VERSION:-0.1.0}","mode":"${MODE:-unknown}","phase":{"number":${phase_num},"total":${total_phases},"id":"${phase}","name":"${phase_name}"},"failure":{"step":"${step}","error":"${escaped_error}","output":"${escaped_output}","suggested_fix":"${escaped_fix}"}}
+{"type":"failure","timestamp":"${escaped_timestamp}","version":"${escaped_version}","mode":"${escaped_mode}","phase":{"number":${phase_num_json},"total":${total_phases_json},"id":"${escaped_phase}","name":"${escaped_phase_name}"},"failure":{"step":"${escaped_step}","error":"${escaped_error}","output":"${escaped_output}","suggested_fix":"${escaped_fix}"}}
 EOF
 )
     fi
