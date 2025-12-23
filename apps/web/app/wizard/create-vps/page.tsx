@@ -317,6 +317,33 @@ export default function CreateVPSPage() {
           </div>
         </div>
 
+        {/* Region selection tip - prominent placement */}
+        <div className="rounded-xl border border-[oklch(0.75_0.18_195/0.3)] bg-[oklch(0.75_0.18_195/0.05)] p-4">
+          <h3 className="font-medium text-foreground mb-2">💡 Why region matters</h3>
+          <p className="text-sm text-muted-foreground">
+            Closer servers = faster response times. When you type, commands reach your VPS faster.
+            When AI generates code, it appears on your screen faster.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 text-sm">
+            <div className="rounded-lg bg-background/50 px-3 py-2">
+              <span className="font-medium text-foreground">🇺🇸 USA:</span>{" "}
+              <span className="text-muted-foreground">Pick US-West (California) or US-East (Virginia)</span>
+            </div>
+            <div className="rounded-lg bg-background/50 px-3 py-2">
+              <span className="font-medium text-foreground">🇪🇺 Europe:</span>{" "}
+              <span className="text-muted-foreground">Pick Germany, France, or Finland</span>
+            </div>
+            <div className="rounded-lg bg-background/50 px-3 py-2">
+              <span className="font-medium text-foreground">🌏 Asia-Pacific:</span>{" "}
+              <span className="text-muted-foreground">Pick Singapore or Australia</span>
+            </div>
+            <div className="rounded-lg bg-background/50 px-3 py-2">
+              <span className="font-medium text-foreground">🤷 Unsure?</span>{" "}
+              <span className="text-muted-foreground">Any region works fine—pick one!</span>
+            </div>
+          </div>
+        </div>
+
         {/* Provider-specific guides */}
         <div className="space-y-3">
           <h2 className="font-semibold">Need help with your provider?</h2>
@@ -369,11 +396,15 @@ export default function CreateVPSPage() {
                 </GuideStep>
 
                 <GuideStep number={3} title="Choose your server location">
-                  Pick a data center close to you for faster speeds:
+                  Pick a data center close to you for faster speeds. The closer the server,
+                  the faster your typing appears and AI responses stream back. This matters
+                  because you&apos;ll be interacting with your VPS constantly.
                   <ul className="mt-2 list-disc space-y-1 pl-5">
-                    <li>USA: Choose US-West or US-East</li>
-                    <li>Europe: Choose Germany (FSN) or Finland (HEL)</li>
-                    <li>If unsure, any location works fine!</li>
+                    <li><strong>USA West Coast:</strong> Pick US-West, Los Angeles, or Seattle</li>
+                    <li><strong>USA East Coast:</strong> Pick US-East, Virginia, or New York</li>
+                    <li><strong>Europe:</strong> Pick Germany (Nuremberg/Frankfurt), France, or Finland</li>
+                    <li><strong>Asia-Pacific:</strong> Pick Singapore, Sydney, or Tokyo</li>
+                    <li><strong>If unsure:</strong> Just pick one! Any region works, and the difference is small.</li>
                   </ul>
                 </GuideStep>
 
