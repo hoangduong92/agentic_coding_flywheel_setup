@@ -9,6 +9,8 @@ on:
       - 'acfs.manifest.yaml'
       - 'packages/manifest/**'
       - '.github/workflows/installer.yml'
+      - '.shellcheckrc'
+      - 'tests/**/*.sh'
   pull_request:
     branches: [main]
     paths:
@@ -17,6 +19,8 @@ on:
       - 'acfs.manifest.yaml'
       - 'packages/manifest/**'
       - '.github/workflows/installer.yml'
+      - '.shellcheckrc'
+      - 'tests/**/*.sh'
 
 jobs:
   shellcheck:
