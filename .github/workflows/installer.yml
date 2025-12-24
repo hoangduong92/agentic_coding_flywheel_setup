@@ -115,7 +115,8 @@ jobs:
       - name: Run installer
         run: |
           # Skip preflight in CI - GitHub Actions containers have limited disk (17GB < 20GB required)
-          bash install.sh --yes --skip-preflight --mode ${{ matrix.mode }}
+          # Skip Ubuntu upgrade in CI - containers can't reboot during workflow
+          bash install.sh --yes --skip-preflight --skip-ubuntu-upgrade --mode ${{ matrix.mode }}
 
       - name: Run doctor
         run: |
