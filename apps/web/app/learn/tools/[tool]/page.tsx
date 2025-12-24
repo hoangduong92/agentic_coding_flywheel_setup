@@ -171,7 +171,7 @@ const TOOLS: Record<ToolId, ToolDoc> = {
     accent: "from-violet-400 to-purple-500",
     quickStart: {
       title: "Quick start (MCP calls)",
-      code: `# Register and fetch mail (conceptual — called via MCP tools)\nensure_project(human_key='/path/to/repo')\nregister_agent(project_key, program='codex-cli', model='gpt-5')\nfetch_inbox(project_key, agent_name='YourAgent')`,
+      code: `# Register and fetch mail (conceptual — called via MCP tools)\nensure_project(human_key='/path/to/repo')\nregister_agent(project_key, program='codex-cli', model='gpt-5.2-codex')\nfetch_inbox(project_key, agent_name='YourAgent')`,
     },
     commonCommands: [
       {

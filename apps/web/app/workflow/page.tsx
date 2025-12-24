@@ -612,8 +612,8 @@ export default function WorkflowPage() {
             <p className="text-sm flex items-start gap-3">
               <Clock className="h-5 w-5 text-[oklch(0.78_0.16_75)] shrink-0 mt-0.5" />
               <span>
-                <strong>Investment:</strong> VPS ($40-56/mo, month-to-month) + Claude Max ($200/mo × 1-5) + GPT Pro ($200/mo × 1-5) +
-                Gemini Ultra ($250/mo). Scale your swarm as you see ROI; start with 1 subscription of each and grow!
+                <strong>Investment:</strong> VPS ($40-56/mo, month-to-month) + Claude Max ($200/mo × 1-5) + ChatGPT Pro ($200/mo × 1-5) +
+                Gemini Advanced ($20/mo). Scale your swarm as you see ROI; start with 1 subscription of each and grow!
               </span>
             </p>
           </Card>
@@ -685,7 +685,7 @@ export default function WorkflowPage() {
           <div className="space-y-2">
             <WorkflowStep number={1} title="Start with Your Primary AI" color="bg-amber-500">
               <p>
-                Open <a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">ChatGPT with GPT Pro</a> and
+                Open <a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">ChatGPT 5.2 Pro</a> and
                 describe your project in detail. Be thorough about what you want to build, user experience, and technical requirements.
                 Ask it to create a comprehensive implementation plan.
               </p>
@@ -696,7 +696,7 @@ export default function WorkflowPage() {
                 Give the same prompt to{" "}
                 <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Claude Opus 4.5</a> and{" "}
                 <a href="https://aistudio.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Gemini 3 with Deep Think</a>.
-                Each model produces different insights: GPT excels at system design, Claude at code quality, Gemini at creative features.
+                Each model produces different insights: GPT-5.2 excels at system design, Claude Opus 4.5 at code quality, Gemini 3 at creative features.
               </p>
             </WorkflowStep>
 
@@ -839,7 +839,7 @@ export default function WorkflowPage() {
                 description="Create 8 agent panes in your project session"
               />
               <p className="text-xs mt-2">
-                Run 3+ machines with multiple subscriptions (e.g., 5 GPT Pro, 5 Claude Max, 3 Gemini Ultra).
+                Run 3+ machines with multiple subscriptions (e.g., 5 ChatGPT Pro, 5 Claude Max, 3 Gemini Advanced).
               </p>
             </WorkflowStep>
 
@@ -1050,11 +1050,11 @@ export default function WorkflowPage() {
             <GuideSection title="The Model Hierarchy">
               <ul className="space-y-2 text-sm">
                 <li>
-                  <strong>Opus 4.5 / GPT 5.2 with extra effort:</strong> Use for scrutinize_ui,
+                  <strong>Opus 4.5 / GPT-5.2-Codex with extra-high effort:</strong> Use for scrutinize_ui,
                   check_orm, and high-stakes analysis. These require deep reasoning.
                 </li>
                 <li>
-                  <strong>Claude Sonnet / GPT 4o:</strong> Great for fresh_review, fix_bug,
+                  <strong>Opus 4.5 / GPT-5.2-Codex with high effort:</strong> Great for fresh_review, fix_bug,
                   work_on_beads, and routine coding. Fast and reliable.
                 </li>
                 <li>
@@ -1376,7 +1376,7 @@ export default function WorkflowPage() {
               viewport={{ once: true }}
             >
               {[
-                { color: "from-amber-500 to-orange-600", text: "Plan with 3 AI models: GPT Pro, Opus 4.5, Gemini → synthesize best ideas" },
+                { color: "from-amber-500 to-orange-600", text: "Plan with 3 AI models: ChatGPT 5.2 Pro, Opus 4.5, Gemini 3 → synthesize best ideas" },
                 { color: "from-amber-500 to-orange-600", text: "Generate feature ideas: Use the \"100 ideas, show me 10\" technique" },
                 { color: "from-emerald-500 to-teal-600", text: "Create beads: Transform plan into granular, self-documenting tasks" },
                 { color: "from-emerald-500 to-teal-600", text: "Review beads: Iterate in \"plan space\" before implementing" },

@@ -143,8 +143,8 @@ export const SERVICES: Service[] = [
     sortOrder: 2,
     shortDescription: 'Google AI coding agent',
     requiresSubscription: true,
-    subscriptionNote: 'Gemini Ultra (~$275/mo)',
-    whyNeeded: 'Third AI option. Native Google integration. Good for Google Cloud projects.',
+    subscriptionNote: 'Gemini Advanced (~$20/mo)',
+    whyNeeded: 'Third AI option. Uses Gemini 3. Native Google integration. Good for Google Cloud projects.',
     signupUrl: 'https://accounts.google.com/',
     supportsGoogleSso: true, // It IS Google
     postInstallCommand: 'gemini',

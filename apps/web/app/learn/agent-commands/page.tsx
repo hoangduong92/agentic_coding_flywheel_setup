@@ -41,8 +41,8 @@ const agents: AgentInfo[] = [
     command: "claude",
     aliases: ["cc"],
     description:
-      "Anthropic's powerful coding agent. Uses Claude models (Sonnet, Opus) with deep reasoning capabilities. Best for complex architecture decisions and nuanced code understanding.",
-    model: "Claude 3.5/4",
+      "Anthropic's powerful coding agent. Uses Claude Opus 4.5 with deep reasoning capabilities. Best for complex architecture decisions and nuanced code understanding.",
+    model: "Claude Opus 4.5",
     color: "from-orange-400 to-amber-500",
     icon: "C",
     examples: [
@@ -80,8 +80,8 @@ const agents: AgentInfo[] = [
     command: "codex",
     aliases: ["cod"],
     description:
-      "OpenAI's coding agent. Uses GPT-4 and newer models. Excellent for code generation, refactoring, and following structured instructions.",
-    model: "GPT-4 / o1",
+      "OpenAI's coding agent. Uses GPT-5.2-Codex with high or extra high effort settings. Excellent for code generation, refactoring, and following structured instructions.",
+    model: "GPT-5.2-Codex",
     color: "from-emerald-400 to-teal-500",
     icon: "O",
     examples: [
@@ -94,8 +94,8 @@ const agents: AgentInfo[] = [
         description: "Direct prompt with task",
       },
       {
-        command: 'cod "explain this code" --model gpt-4o',
-        description: "Specify model",
+        command: 'cod "explain this code" --effort extra-high',
+        description: "Use extra high effort for complex reasoning",
       },
       {
         command: "cod --help",
@@ -104,7 +104,7 @@ const agents: AgentInfo[] = [
     ],
     tips: [
       "Good for structured, step-by-step tasks",
-      "Use gpt-4o for speed, o1 for reasoning",
+      "Use --effort high or extra-high for complex reasoning",
       "Works well with clear, specific prompts",
     ],
   },
@@ -114,8 +114,8 @@ const agents: AgentInfo[] = [
     command: "gemini",
     aliases: ["gmi"],
     description:
-      "Google's coding agent. Uses Gemini models with large context windows. Great for analyzing large codebases and multi-file understanding.",
-    model: "Gemini 1.5/2",
+      "Google's coding agent. Uses Gemini 3 with large context windows. Great for analyzing large codebases and multi-file understanding.",
+    model: "Gemini 3",
     color: "from-blue-400 to-indigo-500",
     icon: "G",
     examples: [

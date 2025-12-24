@@ -405,7 +405,7 @@ export default function RentVPSPage() {
                 </p>
               </div>
               <div className="rounded-lg border border-border/50 bg-card/50 p-3">
-                <p className="font-medium text-foreground">GPT Pro ($200/month): Critical for Planning</p>
+                <p className="font-medium text-foreground">ChatGPT Pro ($200/month): Critical for Planning</p>
                 <p className="text-sm text-muted-foreground">
                   Access to GPT 5.2 Pro with Extended Thinking in the ChatGPT webapp. This is
                   <strong> the key to making this approach work</strong>: you use it to write,
@@ -418,7 +418,7 @@ export default function RentVPSPage() {
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
                 <p className="font-medium text-foreground">Total for full setup:</p>
                 <p className="text-sm text-muted-foreground">
-                  VPS (~$56) + Claude Max x2 ($400) + GPT Pro ($200) = <strong>~$656/month</strong>
+                  VPS (~$56) + Claude Max x2 ($400) + ChatGPT Pro ($200) = <strong>~$656/month</strong>
                   <br /><br />
                   <em>This sounds like a lot, but compare it to hiring: a junior developer in the US
                   costs $100k+/year (~$8,300+/month). For less than 10% of that, you get AI agents
@@ -428,9 +428,9 @@ export default function RentVPSPage() {
             </div>
             <div className="mt-4 rounded-lg border border-[oklch(0.65_0.12_30/0.3)] bg-[oklch(0.65_0.12_30/0.08)] p-3">
               <p className="text-sm text-muted-foreground">
-                <strong>⚠️ Realistic minimum investment:</strong> VPS (~$40-56/month for 64GB) + Claude Max ($200/month) + GPT Pro ($200/month) = <strong>~$440-456/month</strong>.
+                <strong>⚠️ Realistic minimum investment:</strong> VPS (~$40-56/month for 64GB) + Claude Max ($200/month) + ChatGPT Pro ($200/month) = <strong>~$440-456/month</strong>.
                 The $20/month Claude Pro tier does <em>not</em> have enough capacity for agentic workflows; you&apos;ll
-                hit rate limits almost immediately. Claude Max is required for execution, and GPT Pro&apos;s extended
+                hit rate limits almost immediately. Claude Max is required for execution, and ChatGPT Pro&apos;s extended
                 thinking is essential for creating the detailed plan documents that make this approach work.
                 <br /><br />
                 <strong>Perspective:</strong> A junior US developer costs ~$8k+/month. This is ~5% of that, for AI agents that work 24/7.

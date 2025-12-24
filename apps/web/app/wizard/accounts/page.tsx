@@ -335,7 +335,7 @@ export default function AccountsPage() {
         <ul className="mt-2 list-inside list-disc space-y-1 text-sm">
           <li><strong>Claude Code</strong>: Requires Claude Max ($200/mo)</li>
           <li><strong>Codex CLI</strong>: Requires ChatGPT Pro ($200/mo)</li>
-          <li><strong>Gemini CLI</strong>: Requires Gemini Ultra (~$275/mo)</li>
+          <li><strong>Gemini CLI</strong>: Requires Gemini Advanced (~$20/mo)</li>
         </ul>
         <p className="mt-2 text-sm">
           <strong>You don&apos;t need all of them!</strong> Start with one agent (Claude Code is recommended)

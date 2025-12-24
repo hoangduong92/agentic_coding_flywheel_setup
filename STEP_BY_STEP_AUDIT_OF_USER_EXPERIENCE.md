@@ -59,7 +59,7 @@ This is NOT for you if:
 The full investment is buried in the rent-vps page's SimplerGuide:
 - VPS: ~$56/month
 - Claude Max: $200/month (or $400 for 2 accounts)
-- GPT Pro: $200/month
+- ChatGPT Pro: $200/month
 
 **Total: $456-656/month**
 

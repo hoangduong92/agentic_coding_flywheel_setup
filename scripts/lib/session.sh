@@ -21,7 +21,7 @@
 #     exported_at: string;            // ISO8601 timestamp
 #     session_id: string;             // Unique session identifier
 #     agent: "claude-code" | "codex" | "gemini";
-#     model: string;                  // e.g., "opus-4.5", "gpt-4o"
+#     model: string;                  // e.g., "opus-4.5", "gpt-5.2-codex"
 #     summary: string;                // Brief description of what happened
 #     duration_minutes: number;       // Session length
 #     stats: {

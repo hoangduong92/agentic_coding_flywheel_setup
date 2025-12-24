@@ -103,7 +103,7 @@ Sessions are stored as JSONL files. Each line is a JSON object with:
        "approval_policy": "never",
        "cwd": "/path/to/workspace",
        "effort": "high",
-       "model": "gpt-5.1-codex-max",
+       "model": "gpt-5.2-codex",
        "sandbox_policy": {"type": "danger-full-access"},
        "summary": "auto"
      }

@@ -1133,7 +1133,7 @@ ACFS includes integration with **MCP Agent Mail** for multi-agent coordination:
 ```bash
 # In your agent, call:
 mcp.ensure_project(project_key="/data/projects/my-project")
-mcp.register_agent(project_key=..., program="claude-code", model="opus-4.1")
+mcp.register_agent(project_key=..., program="claude-code", model="opus-4.5")
 ```
 
 **2. Reserve Files Before Editing:**
