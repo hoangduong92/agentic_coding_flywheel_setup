@@ -31,6 +31,7 @@ if [[ -t 2 ]]; then
     RED='\033[0;31m'
     GREEN='\033[0;32m'
     YELLOW='\033[0;33m'
+    # shellcheck disable=SC2034
     BLUE='\033[0;34m'
     CYAN='\033[0;36m'
     GRAY='\033[0;90m'
@@ -40,6 +41,7 @@ else
     RED=''
     GREEN=''
     YELLOW=''
+    # shellcheck disable=SC2034
     BLUE='' # unused but kept for consistency
     CYAN=''
     GRAY=''
