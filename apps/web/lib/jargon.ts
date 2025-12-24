@@ -897,6 +897,15 @@ export const jargonDictionary: Record<string, JargonTerm> = {
     related: ["environment-variable", "claude-code", "api"],
   },
 
+  sso: {
+    term: "SSO",
+    short: "Single Sign-On, logging into multiple services with one account (like Google)",
+    long: "SSO (Single Sign-On) lets you use one login to access multiple different services. Instead of creating separate usernames and passwords for every website, you click 'Sign in with Google' (or GitHub, or Microsoft) and you're in. The service trusts your Google account to verify who you are. This is both convenient (one password to remember) and more secure (Google's security team is better at protecting accounts than most websites). Most developer services support Google SSO, which is why we recommend using it whenever available.",
+    analogy: "Think of your Google account like a trusted ID card. Instead of each building (website) issuing you a new ID badge, they just check your universal ID at the door. One ID gets you into many buildings, and if you lose it, you only need to replace one card instead of dozens.",
+    why: "We strongly recommend using Google SSO for all developer services that support it. It's more secure than creating unique passwords (which people often reuse or make weak), provides better account recovery options, and means fewer credentials to manage. When setting up accounts for Claude, GitHub, and other services, look for the 'Sign in with Google' button first.",
+    related: ["api-key", "github"],
+  },
+
   "environment-variable": {
     term: "Environment Variable",
     short: "A named setting stored in your system that programs can read",
