@@ -114,6 +114,14 @@ jobs:
         run: |
           bash tests/vm/bootstrap_offline_checks.sh
 
+      - name: Configure CI sudo
+        run: |
+          # CI needs passwordless sudo for upstream scripts that use sudo internally
+          # This is needed for safe mode since it doesn't configure NOPASSWD
+          # The ubuntu user is created by install.sh, so we pre-configure sudoers
+          echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/90-ci-ubuntu
+          chmod 440 /etc/sudoers.d/90-ci-ubuntu
+
       - name: Run installer
         run: |
           # Skip preflight in CI - GitHub Actions containers have limited disk (17GB < 20GB required)
