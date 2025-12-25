@@ -12,6 +12,9 @@ const port = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : DEFAUL
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://localhost:${port}`;
 
+// Skip local webServer when testing against external URL (e.g., production)
+const isExternalUrl = !!process.env.PLAYWRIGHT_BASE_URL;
+
 const webServerCommand = (() => {
   // Default to production server for stability (matches CI behavior).
   // Override locally with PW_USE_DEV_SERVER=1 if needed.
@@ -67,10 +70,13 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: webServerCommand,
-    url: baseURL,
-    reuseExistingServer: !isCI,
-    timeout: 180000, // 3 minutes for build + start
-  },
+  // Skip webServer when testing against external URL (production smoke tests)
+  webServer: isExternalUrl
+    ? undefined
+    : {
+        command: webServerCommand,
+        url: baseURL,
+        reuseExistingServer: !isCI,
+        timeout: 180000, // 3 minutes for build + start
+      },
 });
