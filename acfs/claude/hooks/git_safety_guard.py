@@ -36,6 +36,7 @@ SAFE_PATTERNS = [
     r"git restore --staged",      # Unstage without discarding
     r"git clean -n",              # Dry-run clean
     r"git clean --dry-run",       # Dry-run clean
+    r"git push\b.*--force-with-lease",  # Safer force push variant
     r"rm -rf /tmp/",              # Temp directory cleanup
     r"rm -rf /var/tmp/",          # Temp directory cleanup
     r"rm -rf \$TMPDIR/",          # Temp directory cleanup
