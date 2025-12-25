@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { useEffect, useCallback, useRef, type ReactNode, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import {
@@ -20,13 +20,12 @@ interface AnalyticsProviderProps {
 }
 
 /**
- * Analytics Provider Component
- * Handles GA4 initialization, pageview tracking, and engagement metrics
+ * Inner component that uses useSearchParams - isolated in its own Suspense boundary
+ * to prevent SSR bailout for the entire app
  */
-export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
+function AnalyticsTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  // Trim to remove any trailing newlines from env var (causes JS syntax errors)
   const gaId = GA_MEASUREMENT_ID?.trim();
   const scrollDepthsReached = useRef<Set<number>>(new Set());
   const pageStartTime = useRef<number>(0);
@@ -214,6 +213,19 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [pathname, gaId]);
 
+  return null; // This component only tracks, doesn't render anything
+}
+
+/**
+ * Analytics Provider Component
+ * Handles GA4 initialization, pageview tracking, and engagement metrics
+ *
+ * IMPORTANT: useSearchParams is isolated in AnalyticsTracker with its own Suspense
+ * to prevent SSR bailout for the entire app tree.
+ */
+export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
+  const gaId = GA_MEASUREMENT_ID?.trim();
+
   if (!gaId) {
     return <>{children}</>;
   }
@@ -227,6 +239,10 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     <>
       {/* Google Analytics Script */}
       <Script {...gaExternalScriptProps} />
+      {/* Analytics tracker wrapped in Suspense to prevent SSR bailout */}
+      <Suspense fallback={null}>
+        <AnalyticsTracker />
+      </Suspense>
       {children}
     </>
   );
