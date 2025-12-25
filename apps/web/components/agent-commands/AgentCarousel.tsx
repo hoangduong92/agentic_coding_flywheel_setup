@@ -45,10 +45,14 @@ export function AgentCarousel({
         // Determine if we should change slides
         const threshold = containerWidth * 0.2;
         const velocityThreshold = 0.5;
+        const swipedFarEnough = Math.abs(mx) > threshold;
+        const swipedFastEnough = Math.abs(vx) > velocityThreshold;
 
-        if (Math.abs(mx) > threshold || vx > velocityThreshold) {
+        if (swipedFarEnough || swipedFastEnough) {
+          // Positive mx = swiped right = go to previous
           if (mx > 0 && currentIndex > 0) {
             onIndexChange(currentIndex - 1);
+          // Negative mx = swiped left = go to next
           } else if (mx < 0 && currentIndex < agents.length - 1) {
             onIndexChange(currentIndex + 1);
           }

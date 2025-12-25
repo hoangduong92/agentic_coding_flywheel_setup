@@ -4,18 +4,20 @@ import { useState } from "react";
 import { Check, Terminal } from "lucide-react";
 import { motion, AnimatePresence, springs } from "@/components/motion";
 import { cn } from "@/lib/utils";
-import { agentPersonalities, type AgentType } from "./AgentHeroCard";
+import type { AgentType } from "./AgentHeroCard";
 
 interface QuickCommand {
   alias: string;
   agentType: AgentType;
   label: string;
+  /** Simple two-color gradient for the icon button */
+  iconGradient: string;
 }
 
 const quickCommands: QuickCommand[] = [
-  { alias: "cc", agentType: "claude", label: "Claude" },
-  { alias: "cod", agentType: "codex", label: "Codex" },
-  { alias: "gmi", agentType: "gemini", label: "Gemini" },
+  { alias: "cc", agentType: "claude", label: "Claude", iconGradient: "from-orange-400 to-amber-500" },
+  { alias: "cod", agentType: "codex", label: "Codex", iconGradient: "from-emerald-400 to-teal-500" },
+  { alias: "gmi", agentType: "gemini", label: "Gemini", iconGradient: "from-blue-400 to-indigo-500" },
 ];
 
 export function QuickAccessBar() {
@@ -61,7 +63,6 @@ export function QuickAccessBar() {
     >
       <div className="mx-auto flex max-w-md items-center justify-around gap-2">
         {quickCommands.map((command) => {
-          const personality = agentPersonalities[command.agentType];
           const isCopied = copiedAlias === command.alias;
 
           return (
@@ -93,8 +94,8 @@ export function QuickAccessBar() {
               {/* Icon with agent color accent */}
               <div
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-lg",
-                  `bg-gradient-to-br ${personality.gradient.split(" ")[0]} ${personality.gradient.split(" ")[2]}`
+                  "flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br",
+                  command.iconGradient
                 )}
               >
                 <AnimatePresence mode="wait">

@@ -181,12 +181,15 @@ export function AgentHeroCard({
           <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 text-2xl font-bold text-white backdrop-blur-sm shadow-lg">
             {agent.icon}
           </div>
-          {/* Animated ring */}
-          <motion.div
-            className="absolute -inset-1 rounded-xl border-2 border-white/30"
-            animate={isHovered ? { scale: 1.1, opacity: 0 } : { scale: 1, opacity: 0 }}
-            transition={{ duration: 0.6, repeat: isHovered ? Infinity : 0 }}
-          />
+          {/* Animated ring - pulses on hover */}
+          {isHovered && (
+            <motion.div
+              className="absolute -inset-1 rounded-xl border-2 border-white/40"
+              initial={{ scale: 1, opacity: 0.6 }}
+              animate={{ scale: 1.15, opacity: 0 }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: "easeOut" }}
+            />
+          )}
         </motion.div>
 
         {/* Agent info */}

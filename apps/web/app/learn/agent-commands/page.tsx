@@ -349,26 +349,33 @@ export default function AgentCommandsPage() {
 
           {/* Mobile: Swipeable carousel */}
           <div className="md:hidden">
-            <AgentCarousel
-              agents={agents}
-              currentIndex={mobileIndex}
-              onIndexChange={setMobileIndex}
-            >
-              {(agent, index) => (
-                <div>
-                  <AgentHeroCard
-                    agent={agent}
-                    isExpanded={expandedAgents.has(agent.id)}
-                    onToggle={() => toggleAgent(agent.id)}
-                    index={index}
-                  />
-                  <AgentCardContent
-                    agent={agent}
-                    isExpanded={expandedAgents.has(agent.id)}
-                  />
-                </div>
-              )}
-            </AgentCarousel>
+            {filteredAgents.length > 0 ? (
+              <AgentCarousel
+                agents={filteredAgents}
+                currentIndex={Math.min(mobileIndex, filteredAgents.length - 1)}
+                onIndexChange={setMobileIndex}
+              >
+                {(agent, index) => (
+                  <div>
+                    <AgentHeroCard
+                      agent={agent}
+                      isExpanded={expandedAgents.has(agent.id)}
+                      onToggle={() => toggleAgent(agent.id)}
+                      index={index}
+                    />
+                    <AgentCardContent
+                      agent={agent}
+                      isExpanded={expandedAgents.has(agent.id)}
+                    />
+                  </div>
+                )}
+              </AgentCarousel>
+            ) : (
+              <div className="py-12 text-center">
+                <Search className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
+                <p className="text-muted-foreground">No agents match your search.</p>
+              </div>
+            )}
           </div>
         </motion.div>
 
