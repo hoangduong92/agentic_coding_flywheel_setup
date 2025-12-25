@@ -1,7 +1,7 @@
 /**
  * Lesson Progress Configuration
  *
- * Defines the 19 lessons of the ACFS Learning Hub.
+ * Defines the 20 lessons of the ACFS Learning Hub.
  * Each lesson teaches a core concept for agentic development.
  * Uses TanStack Query for React state management with localStorage persistence.
  */
