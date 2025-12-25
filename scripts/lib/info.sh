@@ -291,18 +291,18 @@ info_get_installed_tools_summary() {
     # Languages
     lang_ok="○"
     local lang_count=0
-    command -v bun &>/dev/null && ((lang_count++))
-    command -v uv &>/dev/null && ((lang_count++))
-    command -v rustc &>/dev/null && ((lang_count++))
-    command -v go &>/dev/null && ((lang_count++))
+    command -v bun &>/dev/null && lang_count=$((lang_count + 1))
+    command -v uv &>/dev/null && lang_count=$((lang_count + 1))
+    command -v rustc &>/dev/null && lang_count=$((lang_count + 1))
+    command -v go &>/dev/null && lang_count=$((lang_count + 1))
     [[ $lang_count -ge 3 ]] && lang_ok="✓"
 
     # Agents
     agents_ok="○"
     local agent_count=0
-    command -v claude &>/dev/null && ((agent_count++))
-    command -v codex &>/dev/null && ((agent_count++))
-    command -v gemini &>/dev/null && ((agent_count++))
+    command -v claude &>/dev/null && agent_count=$((agent_count + 1))
+    command -v codex &>/dev/null && agent_count=$((agent_count + 1))
+    command -v gemini &>/dev/null && agent_count=$((agent_count + 1))
     [[ $agent_count -ge 2 ]] && agents_ok="✓"
 
     # Stack tools

@@ -511,7 +511,7 @@ show_auth_flow() {
                 if [[ $status -eq 1 ]]; then
                     echo "  [$idx] ${AUTH_SERVICE_NAMES[$service]}"
                 fi
-                ((idx++))
+                idx=$((idx + 1))
             done
 
             read -rp "$(echo -e "${CYAN}Choose:${NC} ")" choice

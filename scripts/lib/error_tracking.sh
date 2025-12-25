@@ -282,7 +282,7 @@ try_step_retry() {
             sleep "$delay"
         fi
 
-        ((attempt++))
+        attempt=$((attempt + 1))
     done
 
     # All attempts failed
