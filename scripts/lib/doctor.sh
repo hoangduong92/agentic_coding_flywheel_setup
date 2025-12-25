@@ -65,6 +65,22 @@ if [[ -z "${ACFS_MODE:-}" ]] && [[ -f "$HOME/.acfs/state.json" ]]; then
     [[ -n "${ACFS_MODE:-}" ]] && export ACFS_MODE
 fi
 
+# Prefer the installed state file for target user (for installs where the target user is not ubuntu).
+ACFS_TARGET_USER="${ACFS_TARGET_USER:-}"
+if [[ -z "${ACFS_TARGET_USER:-}" ]] && [[ -f "$HOME/.acfs/state.json" ]]; then
+    if command -v jq &>/dev/null; then
+        ACFS_TARGET_USER="$(jq -r '.target_user // empty' "$HOME/.acfs/state.json" 2>/dev/null || true)"
+    fi
+    if [[ -z "${ACFS_TARGET_USER:-}" ]]; then
+        ACFS_TARGET_USER="$(sed -n 's/.*"target_user"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$HOME/.acfs/state.json" | head -n 1)"
+    fi
+fi
+ACFS_TARGET_USER="${ACFS_TARGET_USER:-ubuntu}"
+if [[ ! "$ACFS_TARGET_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
+    ACFS_TARGET_USER="ubuntu"
+fi
+export ACFS_TARGET_USER
+
 if [[ -f "$SCRIPT_DIR/gum_ui.sh" ]]; then
     source "$SCRIPT_DIR/gum_ui.sh"
 elif [[ -f "$HOME/.acfs/scripts/lib/gum_ui.sh" ]]; then
@@ -563,10 +579,10 @@ check_identity() {
     # Check user
     local user
     user=$(whoami)
-    if [[ "$user" == "ubuntu" ]]; then
-        check "identity.user_is_ubuntu" "Logged in as ubuntu" "pass" "whoami=$user"
+    if [[ "$user" == "$ACFS_TARGET_USER" ]]; then
+        check "identity.user_is_ubuntu" "Logged in as $ACFS_TARGET_USER" "pass" "whoami=$user"
     else
-        check "identity.user_is_ubuntu" "Logged in as ubuntu (currently: $user)" "warn" "whoami=$user" "ssh ubuntu@YOUR_SERVER"
+        check "identity.user_is_ubuntu" "Logged in as $ACFS_TARGET_USER (currently: $user)" "warn" "whoami=$user" "ssh ${ACFS_TARGET_USER}@YOUR_SERVER"
     fi
 
     # Check sudo configuration (passwordless only required in vibe mode)
@@ -580,7 +596,7 @@ check_identity() {
         if command -v sudo &>/dev/null && id -nG 2>/dev/null | grep -qw sudo; then
             check "identity.sudo" "Sudo available (safe mode)" "pass"
         else
-            check "identity.sudo" "Sudo available (safe mode)" "fail" "sudo unavailable" "Ensure ubuntu is in the sudo group and sudo is installed"
+            check "identity.sudo" "Sudo available (safe mode)" "fail" "sudo unavailable" "Ensure ${ACFS_TARGET_USER} is in the sudo group and sudo is installed"
         fi
     fi
 
@@ -594,7 +610,7 @@ check_workspace() {
     if [[ -d "/data/projects" ]] && [[ -w "/data/projects" ]]; then
         check "workspace.data_projects" "/data/projects exists and writable" "pass"
     else
-        check "workspace.data_projects" "/data/projects" "fail" "missing or not writable" "sudo mkdir -p /data/projects && sudo chown ubuntu:ubuntu /data/projects"
+        check "workspace.data_projects" "/data/projects" "fail" "missing or not writable" "sudo mkdir -p /data/projects && sudo chown ${ACFS_TARGET_USER}:${ACFS_TARGET_USER} /data/projects"
     fi
 
     blank_line
@@ -1187,7 +1203,7 @@ check_postgres_connection() {
     fi
 }
 
-# check_postgres_role - Verify ubuntu role exists in PostgreSQL
+# check_postgres_role - Verify target user role exists in PostgreSQL
 # Related: bead azw
 check_postgres_role() {
     # Skip if not installed
@@ -1195,27 +1211,27 @@ check_postgres_role() {
         return  # Already reported in connection check
     fi
 
-    # Try to check if ubuntu role exists
+    # Try to check if target user role exists
     local role_check
     local connect_success=false
 
     # Try localhost first
-    if role_check=$(timeout 5 psql -w -h localhost -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='ubuntu'" 2>/dev/null); then
+    if role_check=$(timeout 5 psql -w -h localhost -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='${ACFS_TARGET_USER}'" 2>/dev/null); then
         connect_success=true
     # Try unix socket fallback
-    elif role_check=$(timeout 5 psql -w -h /var/run/postgresql -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='ubuntu'" 2>/dev/null); then
+    elif role_check=$(timeout 5 psql -w -h /var/run/postgresql -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='${ACFS_TARGET_USER}'" 2>/dev/null); then
         connect_success=true
     fi
 
     if [[ "$connect_success" == "true" ]]; then
         if [[ "$role_check" == "1" ]]; then
-            check "deep.db.postgres_role" "PostgreSQL ubuntu role" "pass" "role exists"
+            check "deep.db.postgres_role" "PostgreSQL ${ACFS_TARGET_USER} role" "pass" "role exists"
         else
-            check "deep.db.postgres_role" "PostgreSQL ubuntu role" "warn" "role missing" "sudo -u postgres createuser -s ubuntu"
+            check "deep.db.postgres_role" "PostgreSQL ${ACFS_TARGET_USER} role" "warn" "role missing" "sudo -u postgres createuser -s ${ACFS_TARGET_USER}"
         fi
     else
         # Connection failed
-        check "deep.db.postgres_role" "PostgreSQL ubuntu role" "warn" "could not verify (connection failed)" "sudo systemctl status postgresql"
+        check "deep.db.postgres_role" "PostgreSQL ${ACFS_TARGET_USER} role" "warn" "could not verify (connection failed)" "sudo systemctl status postgresql"
     fi
 }
 
