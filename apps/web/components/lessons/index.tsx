@@ -4,6 +4,8 @@ import { WelcomeLesson } from "./welcome-lesson";
 import { LinuxBasicsLesson } from "./linux-basics-lesson";
 import { SSHBasicsLesson } from "./ssh-basics-lesson";
 import { TmuxBasicsLesson } from "./tmux-basics-lesson";
+import { GitBasicsLesson } from "./git-basics-lesson";
+import { GithubCliLesson } from "./github-cli-lesson";
 import { AgentsLoginLesson } from "./agents-login-lesson";
 import { NtmCoreLesson } from "./ntm-core-lesson";
 import { NtmPaletteLesson } from "./ntm-palette-lesson";
@@ -30,6 +32,10 @@ export function renderLessonComponent(slug: string): React.ReactNode | null {
       return <SSHBasicsLesson />;
     case "tmux-basics":
       return <TmuxBasicsLesson />;
+    case "git-basics":
+      return <GitBasicsLesson />;
+    case "github-cli":
+      return <GithubCliLesson />;
     case "agent-commands":
       return <AgentsLoginLesson />;
     case "ntm-core":
@@ -67,6 +73,8 @@ export {
   LinuxBasicsLesson,
   SSHBasicsLesson,
   TmuxBasicsLesson,
+  GitBasicsLesson,
+  GithubCliLesson,
   AgentsLoginLesson,
   NtmCoreLesson,
   NtmPaletteLesson,
