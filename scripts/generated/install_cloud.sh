@@ -13,12 +13,13 @@ if [[ -f "$ACFS_GENERATED_SCRIPT_DIR/../lib/logging.sh" ]]; then
     source "$ACFS_GENERATED_SCRIPT_DIR/../lib/logging.sh"
 else
     # Fallback logging functions if logging.sh not found
-    log_step() { echo "[*] $*"; }
-    log_section() { echo ""; echo "=== $* ==="; }
-    log_success() { echo "[OK] $*"; }
+    # Progress/status output should go to stderr so stdout stays clean for piping.
+    log_step() { echo "[*] $*" >&2; }
+    log_section() { echo "" >&2; echo "=== $* ===" >&2; }
+    log_success() { echo "[OK] $*" >&2; }
     log_error() { echo "[ERROR] $*" >&2; }
     log_warn() { echo "[WARN] $*" >&2; }
-    log_info() { echo "    $*"; }
+    log_info() { echo "    $*" >&2; }
 fi
 
 # Source install helpers (run_as_*_shell, selection helpers)
