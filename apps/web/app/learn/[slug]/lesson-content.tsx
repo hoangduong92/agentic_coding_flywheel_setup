@@ -16,6 +16,7 @@ import {
   GraduationCap,
   Home,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,7 +63,7 @@ function useReadingProgress() {
   return progress;
 }
 
-// Minimal, Stripe-inspired sidebar
+// Premium glassmorphic sidebar with micro-interactions
 function LessonSidebar({
   currentLessonId,
   completedLessons,
@@ -73,86 +74,153 @@ function LessonSidebar({
   const progressPercent = Math.round((completedLessons.length / LESSONS.length) * 100);
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-border/40 bg-background lg:block">
-      <div className="flex h-full flex-col">
-        {/* Clean header */}
-        <div className="p-6 pb-4">
-          <Link
-            href="/learn"
-            className="group flex items-center gap-2.5 text-foreground/90 transition-colors hover:text-foreground"
-          >
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 transition-all duration-200 group-hover:bg-primary/15 group-hover:scale-105">
-              <GraduationCap className="h-4 w-4 text-primary" />
+    <aside className="sticky top-0 hidden h-screen w-72 shrink-0 lg:block">
+      {/* Glass panel */}
+      <div className="h-full border-r border-white/[0.08] bg-gradient-to-b from-black/40 via-black/20 to-black/40 backdrop-blur-xl">
+        <div className="flex h-full flex-col">
+          {/* Header with glow */}
+          <div className="relative p-6 pb-4">
+            {/* Ambient glow */}
+            <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-40 h-40 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
+
+            <Link
+              href="/learn"
+              className="group relative flex items-center gap-3 text-foreground/90 transition-all duration-300 hover:text-foreground"
+            >
+              {/* Glowing icon container */}
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/40 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 transition-all duration-300 group-hover:scale-110 group-hover:border-primary/40 group-hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]">
+                  <GraduationCap className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+                </div>
+              </div>
+              <div>
+                <span className="text-sm font-semibold tracking-tight block">
+                  Learning Hub
+                </span>
+                <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">
+                  ACFS Academy
+                </span>
+              </div>
+            </Link>
+          </div>
+
+          {/* Premium progress section */}
+          <div className="mx-6 mb-6 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+            <div className="flex items-center justify-between text-xs mb-3">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-mono text-primary font-medium">{progressPercent}%</span>
             </div>
-            <span className="text-[13px] font-semibold tracking-tight">
-              Learning Hub
-            </span>
-          </Link>
-        </div>
-
-        {/* Minimal progress bar */}
-        <div className="mx-6 mb-6">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-2">
-            <span>{completedLessons.length}/{LESSONS.length} lessons</span>
-            <span className="tabular-nums">{progressPercent}%</span>
+            {/* Glowing progress bar */}
+            <div className="relative h-2 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary via-primary to-emerald-400 transition-all duration-700 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
+              {/* Glow effect */}
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary to-emerald-400 blur-sm opacity-60 transition-all duration-700"
+                style={{ width: `${progressPercent}%` }}
+              />
+              {/* Shimmer effect */}
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"
+                style={{ animationDelay: '0.5s' }}
+              />
+            </div>
+            <div className="flex items-center justify-between mt-3 text-[10px] text-muted-foreground/60">
+              <span>{completedLessons.length} completed</span>
+              <span>{LESSONS.length - completedLessons.length} remaining</span>
+            </div>
           </div>
-          <div className="h-1 rounded-full bg-muted/50 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
 
-        {/* Clean lesson list */}
-        <nav className="flex-1 overflow-y-auto px-3 scrollbar-hide">
-          <ul className="space-y-0.5">
-            {LESSONS.map((lesson) => {
-              const isCompleted = completedLessons.includes(lesson.id);
-              const isCurrent = lesson.id === currentLessonId;
+          {/* Lesson list with connector lines */}
+          <nav className="flex-1 overflow-y-auto px-4 scrollbar-hide">
+            <ul className="relative space-y-1 py-2">
+              {/* Vertical connector line */}
+              <div className="absolute left-[30px] top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-white/[0.08] to-transparent" />
 
-              return (
-                <li key={lesson.id}>
-                  <Link
-                    href={`/learn/${lesson.slug}`}
-                    className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-150 ${
-                      isCurrent
-                        ? "bg-primary/8 text-foreground font-medium"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                    }`}
-                  >
-                    <div
-                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium transition-all duration-200 ${
-                        isCompleted
-                          ? "bg-emerald-500/15 text-emerald-500"
-                          : isCurrent
-                            ? "bg-primary/15 text-primary"
-                            : "bg-muted/80 text-muted-foreground group-hover:bg-muted"
+              {LESSONS.map((lesson, index) => {
+                const isCompleted = completedLessons.includes(lesson.id);
+                const isCurrent = lesson.id === currentLessonId;
+
+                return (
+                  <li key={lesson.id} className="relative">
+                    <Link
+                      href={`/learn/${lesson.slug}`}
+                      className={`group relative flex items-center gap-4 rounded-xl px-3 py-3 transition-all duration-300 ${
+                        isCurrent
+                          ? "bg-primary/10 shadow-[0_0_30px_-5px_rgba(var(--primary-rgb),0.3)]"
+                          : "hover:bg-white/[0.04]"
                       }`}
                     >
-                      {isCompleted ? (
-                        <Check className="h-3 w-3" strokeWidth={2.5} />
-                      ) : (
-                        <span className="tabular-nums">{lesson.id + 1}</span>
-                      )}
-                    </div>
-                    <span className="truncate">{lesson.title}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+                      {/* Node indicator */}
+                      <div className="relative z-10">
+                        {/* Glow for current/completed */}
+                        {(isCurrent || isCompleted) && (
+                          <div className={`absolute inset-0 rounded-full blur-md ${
+                            isCompleted ? "bg-emerald-500/40" : "bg-primary/40"
+                          }`} />
+                        )}
+                        <div
+                          className={`relative flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium border transition-all duration-300 ${
+                            isCompleted
+                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_-3px_rgba(16,185,129,0.5)]"
+                              : isCurrent
+                                ? "bg-primary/20 border-primary/50 text-primary shadow-[0_0_15px_-3px_rgba(var(--primary-rgb),0.5)]"
+                                : "bg-white/[0.05] border-white/[0.1] text-muted-foreground group-hover:border-white/20 group-hover:bg-white/[0.08]"
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          ) : (
+                            <span className="tabular-nums">{lesson.id + 1}</span>
+                          )}
+                        </div>
+                      </div>
 
-        {/* Minimal footer */}
-        <div className="p-4 border-t border-border/40">
-          <Link
-            href="/"
-            className="flex items-center gap-2 px-3 py-2 text-[13px] text-muted-foreground rounded-lg transition-colors hover:bg-muted/50 hover:text-foreground"
-          >
-            <Home className="h-4 w-4" />
-            <span>Back to Home</span>
-          </Link>
+                      {/* Lesson title */}
+                      <div className="flex-1 min-w-0">
+                        <span className={`block truncate text-[13px] transition-colors duration-200 ${
+                          isCurrent
+                            ? "text-primary font-medium"
+                            : isCompleted
+                              ? "text-foreground/80"
+                              : "text-muted-foreground group-hover:text-foreground"
+                        }`}>
+                          {lesson.title}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1 mt-0.5">
+                          <Clock className="h-2.5 w-2.5" />
+                          {lesson.duration}
+                        </span>
+                      </div>
+
+                      {/* Arrow indicator on hover */}
+                      <ChevronRight className={`h-4 w-4 transition-all duration-300 ${
+                        isCurrent
+                          ? "text-primary opacity-100"
+                          : "text-muted-foreground opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0"
+                      }`} />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-white/[0.06]">
+            <Link
+              href="/"
+              className="group flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground rounded-xl transition-all duration-300 hover:bg-white/[0.04] hover:text-foreground"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.05] border border-white/[0.08] transition-all duration-300 group-hover:scale-105 group-hover:border-white/20">
+                <Home className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              </div>
+              <span>Back to Home</span>
+            </Link>
+          </div>
         </div>
       </div>
     </aside>
@@ -173,7 +241,6 @@ export function LessonContent({ lesson, content }: Props) {
   const [showFinalCelebration, setShowFinalCelebration] = useState(false);
   const { celebrate } = useConfetti();
 
-  // Refs for timeout cleanup
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
@@ -244,16 +311,35 @@ export function LessonContent({ lesson, content }: Props) {
   }, [prevLesson, nextLesson, isCompleted, handleMarkComplete, router]);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Subtle reading progress */}
-      <div className="fixed left-0 right-0 top-0 z-50 h-[2px] bg-transparent">
-        <div
-          className="h-full bg-primary/60 transition-all duration-150"
-          style={{ width: `${readingProgress}%` }}
-        />
+    <div className="min-h-screen bg-background relative">
+      {/* Ambient background effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/[0.03] via-transparent to-transparent" />
       </div>
 
-      {/* Celebration components */}
+      {/* Premium reading progress bar */}
+      <div className="fixed left-0 right-0 top-0 z-50 h-1">
+        <div className="h-full bg-black/20 backdrop-blur-sm" />
+        <div
+          className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-primary to-emerald-400 transition-all duration-150"
+          style={{ width: `${readingProgress}%` }}
+        />
+        {/* Glow */}
+        <div
+          className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-emerald-400 blur-sm opacity-80 transition-all duration-150"
+          style={{ width: `${readingProgress}%` }}
+        />
+        {/* Leading dot */}
+        {readingProgress > 0 && readingProgress < 100 && (
+          <div
+            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)] transition-all duration-150"
+            style={{ left: `calc(${readingProgress}% - 6px)` }}
+          />
+        )}
+      </div>
+
       <CompletionToast message={toastMessage} isVisible={showToast} />
       <FinalCelebrationModal
         isOpen={showFinalCelebration}
@@ -264,79 +350,93 @@ export function LessonContent({ lesson, content }: Props) {
         }}
       />
 
-      <div className="flex">
-        {/* Desktop sidebar */}
+      <div className="relative flex">
         <LessonSidebar
           currentLessonId={lesson.id}
           completedLessons={completedLessons}
         />
 
-        {/* Main content */}
         <main className="flex-1 min-w-0">
-          {/* Mobile header */}
-          <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border/40 bg-background/95 backdrop-blur-sm px-4 py-3 lg:hidden">
-            <Link
-              href="/learn"
-              className="flex items-center gap-2 text-muted-foreground text-sm"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Lessons</span>
-            </Link>
-            <div className="text-xs text-muted-foreground tabular-nums">
-              {lesson.id + 1} / {LESSONS.length}
+          {/* Mobile header - glassmorphic */}
+          <div className="sticky top-0 z-20 lg:hidden">
+            <div className="flex items-center justify-between border-b border-white/[0.08] bg-black/40 backdrop-blur-xl px-4 py-3">
+              <Link
+                href="/learn"
+                className="flex items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Lessons</span>
+              </Link>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/[0.05] border border-white/[0.08]">
+                  <span className="text-primary font-medium tabular-nums">{lesson.id + 1}</span>
+                  <span className="text-muted-foreground/60">/</span>
+                  <span className="text-muted-foreground tabular-nums">{LESSONS.length}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Content area with constrained width */}
-          <div className="px-6 py-10 md:px-12 md:py-16 lg:px-16 lg:py-20">
-            <div className="mx-auto max-w-[680px]">
+          {/* Content */}
+          <div className="px-6 py-10 md:px-12 md:py-16 lg:px-20 lg:py-20">
+            <div className="mx-auto max-w-[720px]">
               {/* Lesson header */}
-              <header className="mb-12">
-                <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
-                  <span className="tabular-nums">Lesson {lesson.id + 1}</span>
-                  <span className="text-border">·</span>
-                  <span className="flex items-center gap-1.5">
+              <header className="mb-14">
+                {/* Meta info */}
+                <div className="flex flex-wrap items-center gap-3 text-sm mb-6">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.08]">
+                    <span className="text-muted-foreground">Lesson</span>
+                    <span className="font-mono text-primary font-medium">{lesson.id + 1}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.08] text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
-                    {lesson.duration}
-                  </span>
+                    <span>{lesson.duration}</span>
+                  </div>
                   {isCompleted && (
-                    <>
-                      <span className="text-border">·</span>
-                      <span className="flex items-center gap-1.5 text-emerald-500">
-                        <Check className="h-3.5 w-3.5" />
-                        Complete
-                      </span>
-                    </>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                      <Check className="h-3.5 w-3.5" />
+                      <span>Complete</span>
+                    </div>
                   )}
                 </div>
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4">
+
+                {/* Title with gradient */}
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 bg-gradient-to-br from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent">
                   {lesson.title}
                 </h1>
-                <p className="text-lg text-muted-foreground leading-relaxed">
+
+                {/* Description */}
+                <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
                   {lesson.description}
                 </p>
               </header>
 
-              {/* Setup prompt */}
+              {/* Setup prompt - glassmorphic */}
               {!isWizardComplete && (
-                <div className="mb-10 rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
-                  <div className="flex gap-4">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
-                      <Sparkles className="h-4 w-4 text-amber-500" />
+                <div className="group mb-12 relative overflow-hidden rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] backdrop-blur-sm transition-all duration-500 hover:border-amber-500/30 hover:bg-amber-500/[0.05]">
+                  {/* Subtle glow */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                  <div className="relative p-6 flex gap-5">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-amber-500/30 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 transition-transform duration-300 group-hover:scale-110">
+                        <Sparkles className="h-5 w-5 text-amber-400 transition-transform duration-300 group-hover:rotate-12" />
+                      </div>
                     </div>
                     <div>
-                      <p className="font-medium text-foreground mb-1">
-                        New here?
+                      <p className="font-semibold text-foreground mb-1.5">
+                        New to ACFS?
                       </p>
-                      <p className="text-sm text-muted-foreground mb-3">
+                      <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                         Complete the setup wizard first to get the most from these lessons.
                       </p>
                       <Link
                         href={`/wizard/${wizardStepSlug}`}
-                        className="inline-flex items-center gap-1 text-sm font-medium text-amber-500 hover:text-amber-400 transition-colors"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-amber-400 hover:text-amber-300 transition-all duration-300 group/link"
                       >
-                        Go to {wizardStepTitle}
-                        <ArrowRight className="h-3.5 w-3.5" />
+                        <span>Go to {wizardStepTitle}</span>
+                        <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/link:translate-x-1" />
                       </Link>
                     </div>
                   </div>
@@ -346,16 +446,17 @@ export function LessonContent({ lesson, content }: Props) {
               {/* Premium markdown content */}
               <article className="prose prose-neutral dark:prose-invert max-w-none
                 prose-headings:font-semibold prose-headings:tracking-tight
-                prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4
-                prose-h3:text-xl prose-h3:mt-10 prose-h3:mb-3
-                prose-h4:text-lg prose-h4:mt-8 prose-h4:mb-2
-                prose-p:text-muted-foreground prose-p:leading-[1.8] prose-p:mb-6
-                prose-a:text-primary prose-a:font-medium prose-a:no-underline hover:prose-a:underline
+                prose-h2:text-2xl prose-h2:mt-14 prose-h2:mb-5 prose-h2:pb-3 prose-h2:border-b prose-h2:border-white/[0.06]
+                prose-h3:text-xl prose-h3:mt-10 prose-h3:mb-4
+                prose-h4:text-lg prose-h4:mt-8 prose-h4:mb-3
+                prose-p:text-muted-foreground prose-p:leading-[1.85] prose-p:mb-6
+                prose-a:text-primary prose-a:font-medium prose-a:no-underline prose-a:transition-all prose-a:duration-200 hover:prose-a:text-primary/80 hover:prose-a:underline
                 prose-strong:text-foreground prose-strong:font-semibold
-                prose-code:text-[13px] prose-code:font-normal prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none
-                prose-li:text-muted-foreground prose-li:leading-[1.8]
+                prose-code:text-[13px] prose-code:font-normal prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none prose-code:border prose-code:border-primary/20
+                prose-li:text-muted-foreground prose-li:leading-[1.85] prose-li:my-2
                 prose-ul:my-6 prose-ol:my-6
-                prose-blockquote:border-l-2 prose-blockquote:border-primary/30 prose-blockquote:bg-muted/30 prose-blockquote:py-0.5 prose-blockquote:pl-4 prose-blockquote:pr-4 prose-blockquote:rounded-r-lg prose-blockquote:not-italic prose-blockquote:text-muted-foreground
+                prose-blockquote:border-l-2 prose-blockquote:border-primary/40 prose-blockquote:bg-primary/[0.03] prose-blockquote:py-1 prose-blockquote:pl-5 prose-blockquote:pr-5 prose-blockquote:rounded-r-xl prose-blockquote:not-italic prose-blockquote:text-muted-foreground/90
+                prose-hr:border-white/[0.08] prose-hr:my-12
               ">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -365,146 +466,177 @@ export function LessonContent({ lesson, content }: Props) {
                 </ReactMarkdown>
               </article>
 
-              {/* Completion CTA */}
-              <div className="mt-16 pt-8 border-t border-border/40">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">
-                      {isCompleted ? "Ready to continue?" : "Finished reading?"}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {isCompleted
-                        ? nextLesson
-                          ? "Move on to the next lesson."
-                          : "You've completed all lessons!"
-                        : "Mark this lesson complete to track your progress."}
-                    </p>
+              {/* Completion CTA - glassmorphic card */}
+              <div className="mt-20 relative group">
+                {/* Glow effect */}
+                <div className={`absolute -inset-1 rounded-3xl blur-xl transition-opacity duration-500 ${
+                  isCompleted
+                    ? "bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 opacity-100"
+                    : "bg-gradient-to-r from-primary/20 to-primary/10 opacity-0 group-hover:opacity-100"
+                }`} />
+
+                <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-8">
+                  {/* Decorative gradient */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+                  <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                    <div className="flex items-start gap-4">
+                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border transition-all duration-300 ${
+                        isCompleted
+                          ? "bg-emerald-500/10 border-emerald-500/30"
+                          : "bg-primary/10 border-primary/30"
+                      }`}>
+                        {isCompleted ? (
+                          <Check className="h-5 w-5 text-emerald-400" />
+                        ) : (
+                          <Zap className="h-5 w-5 text-primary" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg text-foreground mb-1">
+                          {isCompleted ? "Lesson complete!" : "Ready to continue?"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {isCompleted
+                            ? nextLesson
+                              ? "Great progress! Move on when you're ready."
+                              : "Congratulations! You've completed all lessons."
+                            : "Mark this lesson complete to track your progress."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleMarkComplete}
+                      disabled={isCompleted && !nextLesson}
+                      size="lg"
+                      className={`shrink-0 relative overflow-hidden transition-all duration-300 ${
+                        isCompleted
+                          ? "bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)]"
+                          : "shadow-[0_0_30px_-5px_rgba(var(--primary-rgb),0.4)] hover:shadow-[0_0_40px_-5px_rgba(var(--primary-rgb),0.5)]"
+                      }`}
+                    >
+                      {/* Shimmer effect */}
+                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full hover:animate-[shimmer_1s_ease-in-out]" />
+
+                      <span className="relative flex items-center gap-2">
+                        {isCompleted ? (
+                          nextLesson ? (
+                            <>Next Lesson<ArrowRight className="h-4 w-4" /></>
+                          ) : (
+                            <>All Complete<Check className="h-4 w-4" /></>
+                          )
+                        ) : (
+                          <>Mark Complete<Check className="h-4 w-4" /></>
+                        )}
+                      </span>
+                    </Button>
                   </div>
-                  <Button
-                    onClick={handleMarkComplete}
-                    disabled={isCompleted && !nextLesson}
-                    size="lg"
-                    className={`shrink-0 ${
-                      isCompleted
-                        ? "bg-emerald-600 hover:bg-emerald-700"
-                        : ""
-                    }`}
-                  >
-                    {isCompleted ? (
-                      nextLesson ? (
-                        <>
-                          Next Lesson
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </>
-                      ) : (
-                        <>
-                          <Check className="mr-2 h-4 w-4" />
-                          All Complete
-                        </>
-                      )
-                    ) : (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        Mark Complete
-                      </>
-                    )}
-                  </Button>
                 </div>
               </div>
 
-              {/* Desktop navigation */}
-              <nav className="hidden lg:flex items-center justify-between mt-12 pt-8 border-t border-border/40">
+              {/* Navigation cards */}
+              <nav className="hidden lg:grid grid-cols-2 gap-4 mt-12">
                 {prevLesson ? (
                   <Link
                     href={`/learn/${prevLesson.slug}`}
-                    className="group flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.12]"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 group-hover:bg-muted transition-colors">
-                      <ChevronLeft className="h-4 w-4" />
-                    </div>
-                    <div className="text-left">
-                      <div className="text-xs text-muted-foreground mb-0.5">Previous</div>
-                      <div className="font-medium text-foreground">{prevLesson.title}</div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.05] border border-white/[0.08] transition-all duration-300 group-hover:scale-110 group-hover:bg-white/[0.08]">
+                        <ChevronLeft className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:-translate-x-0.5" />
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground/60 mb-1 uppercase tracking-wider">Previous</div>
+                        <div className="font-medium text-foreground transition-colors group-hover:text-primary">{prevLesson.title}</div>
+                      </div>
                     </div>
                   </Link>
                 ) : (
                   <div />
                 )}
-                {nextLesson && (
+                {nextLesson ? (
                   <Link
                     href={`/learn/${nextLesson.slug}`}
-                    className="group flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors text-right"
+                    className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.12] text-right"
                   >
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground mb-0.5">Next</div>
-                      <div className="font-medium text-foreground">{nextLesson.title}</div>
-                    </div>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 group-hover:bg-muted transition-colors">
-                      <ChevronRight className="h-4 w-4" />
+                    <div className="flex items-center justify-end gap-4">
+                      <div>
+                        <div className="text-xs text-muted-foreground/60 mb-1 uppercase tracking-wider">Next</div>
+                        <div className="font-medium text-foreground transition-colors group-hover:text-primary">{nextLesson.title}</div>
+                      </div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.05] border border-white/[0.08] transition-all duration-300 group-hover:scale-110 group-hover:bg-white/[0.08]">
+                        <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:translate-x-0.5" />
+                      </div>
                     </div>
                   </Link>
+                ) : (
+                  <div />
                 )}
               </nav>
             </div>
           </div>
 
-          {/* Mobile bottom spacing */}
-          <div className="h-24 lg:hidden" />
+          <div className="h-28 lg:hidden" />
         </main>
       </div>
 
-      {/* Mobile navigation bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/40 bg-background/95 backdrop-blur-sm lg:hidden pb-safe">
-        <div className="flex items-center gap-2 p-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-11 w-11 shrink-0"
-            disabled={!prevLesson}
-            asChild={!!prevLesson}
-          >
-            {prevLesson ? (
-              <Link href={`/learn/${prevLesson.slug}`} aria-label="Previous">
-                <ChevronLeft className="h-5 w-5" />
-              </Link>
-            ) : (
-              <ChevronLeft className="h-5 w-5" />
-            )}
-          </Button>
-
-          <Button
-            className={`h-11 flex-1 font-medium ${
-              isCompleted ? "bg-emerald-600 hover:bg-emerald-700" : ""
-            }`}
-            onClick={handleMarkComplete}
-            disabled={isCompleted && !nextLesson}
-          >
-            {isCompleted ? (
-              nextLesson ? (
-                <>Next<ArrowRight className="ml-1.5 h-4 w-4" /></>
+      {/* Mobile navigation - glassmorphic */}
+      <div className="fixed inset-x-0 bottom-0 z-30 lg:hidden pb-safe">
+        <div className="border-t border-white/[0.08] bg-black/60 backdrop-blur-xl">
+          <div className="flex items-center gap-3 p-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-12 w-12 shrink-0 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] transition-all duration-300 hover:scale-105"
+              disabled={!prevLesson}
+              asChild={!!prevLesson}
+            >
+              {prevLesson ? (
+                <Link href={`/learn/${prevLesson.slug}`} aria-label="Previous">
+                  <ChevronLeft className="h-5 w-5" />
+                </Link>
               ) : (
-                <>Complete<Check className="ml-1.5 h-4 w-4" /></>
-              )
-            ) : (
-              <>Mark Complete<Check className="ml-1.5 h-4 w-4" /></>
-            )}
-          </Button>
+                <ChevronLeft className="h-5 w-5" />
+              )}
+            </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-11 w-11 shrink-0"
-            disabled={!nextLesson}
-            asChild={!!nextLesson}
-          >
-            {nextLesson ? (
-              <Link href={`/learn/${nextLesson.slug}`} aria-label="Next">
+            <Button
+              className={`h-12 flex-1 rounded-xl font-medium transition-all duration-300 ${
+                isCompleted
+                  ? "bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_25px_-5px_rgba(16,185,129,0.5)]"
+                  : "shadow-[0_0_25px_-5px_rgba(var(--primary-rgb),0.5)]"
+              }`}
+              onClick={handleMarkComplete}
+              disabled={isCompleted && !nextLesson}
+            >
+              {isCompleted ? (
+                nextLesson ? (
+                  <span className="flex items-center gap-2">Next<ArrowRight className="h-4 w-4" /></span>
+                ) : (
+                  <span className="flex items-center gap-2">Done<Check className="h-4 w-4" /></span>
+                )
+              ) : (
+                <span className="flex items-center gap-2">Complete<Check className="h-4 w-4" /></span>
+              )}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-12 w-12 shrink-0 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] transition-all duration-300 hover:scale-105"
+              disabled={!nextLesson}
+              asChild={!!nextLesson}
+            >
+              {nextLesson ? (
+                <Link href={`/learn/${nextLesson.slug}`} aria-label="Next">
+                  <ChevronRight className="h-5 w-5" />
+                </Link>
+              ) : (
                 <ChevronRight className="h-5 w-5" />
-              </Link>
-            ) : (
-              <ChevronRight className="h-5 w-5" />
-            )}
-          </Button>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
