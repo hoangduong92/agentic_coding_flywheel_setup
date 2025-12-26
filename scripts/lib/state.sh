@@ -23,11 +23,11 @@ fi
 _ACFS_STATE_SH_LOADED=1
 
 # ============================================================
-# State File Schema v2 Documentation
+# State File Schema v3 Documentation
 # ============================================================
 #
 # {
-#   "schema_version": 2,                      # Schema version for compatibility
+#   "schema_version": 3,                      # Schema version for compatibility
 #   "version": "0.1.0",                       # ACFS version that created this state
 #   "mode": "vibe",                           # Installation mode (vibe|safe)
 #   "started_at": "2025-01-15T10:30:00Z",     # When installation started
@@ -48,6 +48,12 @@ _ACFS_STATE_SH_LOADED=1
 #   "skip_postgres": false,                   # CLI flag values for reference
 #   "skip_vault": false,
 #   "skip_cloud": false
+#   "ubuntu_upgrade": {                       # Present only while upgrading Ubuntu
+#     "enabled": true,
+#     "original_version": "24.04",
+#     "target_version": "25.10",
+#     "current_stage": "upgrading"
+#   }
 # }
 #
 # Design Decision: Track Phase IDs, Not Numbers
@@ -892,7 +898,7 @@ state_handle_invalid() {
     esac
 }
 
-# Backup and remove corrupted state file
+# Backup and quarantine corrupted state file (move aside)
 # Usage: state_backup_and_remove
 state_backup_and_remove() {
     local state_file
@@ -906,7 +912,11 @@ state_backup_and_remove() {
         case "$state_file" in
             "$expected_user_state"|"$expected_system_state") ;;
             *)
-                echo "Refusing to move unexpected state file path: $state_file" >&2
+                if declare -f log_error &>/dev/null; then
+                    log_error "Refusing to move unexpected state file path: $state_file"
+                else
+                    echo "Refusing to move unexpected state file path: $state_file" >&2
+                fi
                 echo "Expected: $expected_user_state or $expected_system_state" >&2
                 return 1
                 ;;
@@ -916,9 +926,17 @@ state_backup_and_remove() {
         backup_file="${state_file}.backup.$(date +%Y%m%d_%H%M%S)"
 
         if mv "$state_file" "$backup_file" 2>/dev/null; then
-            echo "Moved corrupted state file to: $backup_file"
+            if declare -f log_warn &>/dev/null; then
+                log_warn "Moved state file aside: $backup_file"
+            else
+                echo "Moved state file aside: $backup_file" >&2
+            fi
         else
-            echo "Failed to move state file to backup: $backup_file" >&2
+            if declare -f log_error &>/dev/null; then
+                log_error "Failed to move state file to backup: $backup_file"
+            else
+                echo "Failed to move state file to backup: $backup_file" >&2
+            fi
             return 1
         fi
     fi
@@ -1359,7 +1377,7 @@ get_next_pending_phase() {
 #   2 - Abort (exit installation)
 #
 # Side effects:
-#   - May delete state file if fresh install chosen
+#   - May move state file to a timestamped backup if fresh install chosen
 #   - Prints status messages to stderr
 #
 # Related: agentic_coding_flywheel_setup-4xi
@@ -1377,7 +1395,10 @@ confirm_resume() {
     if ! state=$(state_load 2>/dev/null); then
         # State file exists but can't be loaded (corrupted?)
         _confirm_resume_log_warn "State file exists but is unreadable. Starting fresh."
-        rm -f "$state_file" 2>/dev/null || true
+        if ! state_backup_and_remove; then
+            _confirm_resume_log_warn "Failed to move unreadable state file out of the way. Aborting."
+            return 2
+        fi
         return 1
     fi
 
@@ -1410,7 +1431,10 @@ confirm_resume() {
     # Handle explicit CLI flags first (these override everything)
     if [[ "${ACFS_FORCE_REINSTALL:-}" == "true" ]]; then
         _confirm_resume_log_info "Force reinstall requested. Wiping state..."
-        rm -f "$state_file" 2>/dev/null || true
+        if ! state_backup_and_remove; then
+            _confirm_resume_log_warn "Failed to move state file out of the way. Aborting."
+            return 2
+        fi
         return 1
     fi
 
@@ -1450,7 +1474,10 @@ confirm_resume() {
             case "$choice" in
                 "Fresh install")
                     _confirm_resume_log_info "Starting fresh install..."
-                    rm -f "$state_file" 2>/dev/null || true
+                    if ! state_backup_and_remove; then
+                        _confirm_resume_log_warn "Failed to move state file out of the way. Aborting."
+                        return 2
+                    fi
                     return 1
                     ;;
                 "Abort")
@@ -1468,7 +1495,10 @@ confirm_resume() {
             case "${choice,,}" in
                 f|fresh)
                     _confirm_resume_log_info "Starting fresh install..."
-                    rm -f "$state_file" 2>/dev/null || true
+                    if ! state_backup_and_remove; then
+                        _confirm_resume_log_warn "Failed to move state file out of the way. Aborting."
+                        return 2
+                    fi
                     return 1
                     ;;
                 a|abort)

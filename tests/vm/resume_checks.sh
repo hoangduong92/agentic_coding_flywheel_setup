@@ -69,7 +69,8 @@ assert_file_missing() {
 
 new_state_file() {
   local tag="$1"
-  echo "/tmp/acfs-state-${tag}-$$-${RANDOM}.json"
+  local home="/tmp/acfs-home-${tag}-$$-${RANDOM}"
+  echo "${home}/state.json"
 }
 
 init_state_with_completed() {
@@ -77,7 +78,8 @@ init_state_with_completed() {
   shift
 
   export ACFS_STATE_FILE="$state_file"
-  export ACFS_HOME="/tmp/acfs-home-${RANDOM}"
+  export ACFS_HOME
+  ACFS_HOME="$(dirname "$state_file")"
   export MODE="vibe"
   export TARGET_USER="ubuntu"
   export ACFS_VERSION="0.1.0"
@@ -99,8 +101,8 @@ test_normal_resume() {
   export ACFS_FORCE_RESUME=false
   export ACFS_INTERACTIVE=false
 
-  confirm_resume
-  local rc=$?
+  local rc
+  if confirm_resume; then rc=0; else rc=$?; fi
   assert_eq 0 "$rc" "normal resume returns 0"
 
   assert_true "completed phase is skipped (user_setup)" state_should_skip_phase "user_setup"
@@ -116,8 +118,8 @@ test_force_reinstall() {
   export ACFS_FORCE_RESUME=false
   export ACFS_INTERACTIVE=false
 
-  confirm_resume
-  local rc=$?
+  local rc
+  if confirm_resume; then rc=0; else rc=$?; fi
   assert_eq 1 "$rc" "force reinstall returns 1 (fresh install)"
   assert_file_missing "$state_file" "force reinstall removes state file"
   export ACFS_FORCE_REINSTALL=false
@@ -126,15 +128,18 @@ test_force_reinstall() {
 test_corrupted_state() {
   local state_file
   state_file="$(new_state_file corrupt)"
+  mkdir -p "$(dirname "$state_file")"
   printf '%s' "not json" > "$state_file"
   export ACFS_STATE_FILE="$state_file"
+  export ACFS_HOME
+  ACFS_HOME="$(dirname "$state_file")"
 
   export ACFS_FORCE_REINSTALL=false
   export ACFS_FORCE_RESUME=false
   export ACFS_INTERACTIVE=false
 
-  confirm_resume
-  local rc=$?
+  local rc
+  if confirm_resume; then rc=0; else rc=$?; fi
   assert_eq 1 "$rc" "corrupted state returns fresh install"
   assert_file_missing "$state_file" "corrupted state file is removed"
 }
@@ -159,6 +164,7 @@ test_interrupt_phase() {
 test_version_mismatch() {
   local state_file
   state_file="$(new_state_file version)"
+  mkdir -p "$(dirname "$state_file")"
   cat > "$state_file" <<EOF
 {
   "schema_version": 99,
@@ -167,9 +173,11 @@ test_version_mismatch() {
 }
 EOF
   export ACFS_STATE_FILE="$state_file"
+  export ACFS_HOME
+  ACFS_HOME="$(dirname "$state_file")"
 
-  state_check_version
-  local rc=$?
+  local rc
+  if state_check_version; then rc=0; else rc=$?; fi
   assert_eq 1 "$rc" "version mismatch returns incompatible"
 }
 

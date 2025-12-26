@@ -154,7 +154,7 @@ upgrade_claude_code() {
     bun_bin=$(_agent_get_bun_bin)
     if _agent_check_bun; then
         log_detail "Upgrading Claude Code (bun)..."
-        _agent_run_as_user "\"$bun_bin\" install -g $CLAUDE_PACKAGE" && log_success "Claude Code upgraded"
+        _agent_run_as_user "\"$bun_bin\" add -g $CLAUDE_PACKAGE" && log_success "Claude Code upgraded"
         return 0
     fi
 
@@ -189,7 +189,7 @@ install_codex_cli() {
     log_detail "Installing Codex CLI for $target_user..."
 
     # Install via bun global
-    if _agent_run_as_user "\"$bun_bin\" install -g $CODEX_PACKAGE"; then
+    if _agent_run_as_user "\"$bun_bin\" add -g $CODEX_PACKAGE"; then
         if [[ -x "$codex_bin" ]]; then
             log_success "Codex CLI installed"
             log_detail "Note: Run 'codex login' to authenticate with your ChatGPT Pro account"
@@ -212,7 +212,7 @@ upgrade_codex_cli() {
     fi
 
     log_detail "Upgrading Codex CLI..."
-    _agent_run_as_user "\"$bun_bin\" install -g $CODEX_PACKAGE" && log_success "Codex CLI upgraded"
+    _agent_run_as_user "\"$bun_bin\" add -g $CODEX_PACKAGE" && log_success "Codex CLI upgraded"
 }
 
 # ============================================================
@@ -242,7 +242,7 @@ install_gemini_cli() {
     log_detail "Installing Gemini CLI for $target_user..."
 
     # Install via bun global
-    if _agent_run_as_user "\"$bun_bin\" install -g $GEMINI_PACKAGE"; then
+    if _agent_run_as_user "\"$bun_bin\" add -g $GEMINI_PACKAGE"; then
         if [[ -x "$gemini_bin" ]]; then
             log_success "Gemini CLI installed"
             log_detail "Note: Run 'gemini' to complete Google login"
@@ -265,7 +265,7 @@ upgrade_gemini_cli() {
     fi
 
     log_detail "Upgrading Gemini CLI..."
-    _agent_run_as_user "\"$bun_bin\" install -g $GEMINI_PACKAGE" && log_success "Gemini CLI upgraded"
+    _agent_run_as_user "\"$bun_bin\" add -g $GEMINI_PACKAGE" && log_success "Gemini CLI upgraded"
 }
 
 # ============================================================
