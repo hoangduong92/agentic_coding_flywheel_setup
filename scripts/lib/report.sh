@@ -125,7 +125,7 @@ report_failure() {
     local max_error_lines=5
     if [[ $(echo "$error_output" | wc -l) -gt $max_error_lines ]]; then
         error_output=$(echo "$error_output" | head -n "$max_error_lines")
-        error_output="${error_output}\n... (truncated)"
+        error_output+=$'\n... (truncated)'
     fi
 
     # Get suggested fix from errors.sh if available

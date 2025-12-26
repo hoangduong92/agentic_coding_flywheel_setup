@@ -674,18 +674,35 @@ export_recent_session() {
 }
 
 # Convert CASS export JSON to our schema format
-# Usage: convert_to_acfs_schema <cass_json>
+# Usage: convert_to_acfs_schema <cass.json | raw_json>
 # Returns: ACFS-schema JSON to stdout
 convert_to_acfs_schema() {
-    local cass_json="$1"
+    local input="${1:-}"
+    if [[ -z "$input" ]]; then
+        return 1
+    fi
 
-    echo "$cass_json" | jq '
+    local filter
+    filter="$(
+        cat <<'JQ'
         {
             schema_version: 1,
-            exported_at: (now | todate),
+            exported_at: (now | todateiso8601),
             session_id: (.[0].sessionId // "unknown"),
-            agent: (.[0].agentId // "unknown"),
-            model: (.[0].message.model // "unknown"),
+            agent: (
+              (.[0].agentId // "unknown") as $a |
+              if $a == "claude_code" or $a == "claude-code" then "claude-code"
+              elif $a == "codex" then "codex"
+              elif $a == "gemini" then "gemini"
+              else $a end
+            ),
+            model: (
+              [
+                .[] | select((.message.role? // .type? // "") == "assistant") |
+                (.message.model? // empty) |
+                select(type == "string" and length > 0)
+              ] | .[0] // "unknown"
+            ),
             summary: "Exported session",
             duration_minutes: 0,
             stats: {
@@ -698,13 +715,37 @@ convert_to_acfs_schema() {
             key_prompts: [],
             sanitized_transcript: [
                 .[] | {
-                    role: .message.role,
-                    content: (if .message.content | type == "string" then .message.content else (.message.content[0].text // "") end),
+                    role: (.message.role // .type // "unknown"),
+                    content: (
+                      if (.message.content | type) == "string" then
+                        .message.content
+                      elif (.message.content | type) == "array" then
+                        ([.message.content[]? | if type == "string" then . else (.text? // "") end] | join(""))
+                      else
+                        ""
+                      end
+                    ),
                     timestamp: .timestamp
                 }
             ]
         }
-    ' 2>/dev/null
+JQ
+    )"
+
+    # Prefer raw JSON when the argument clearly looks like JSON.
+    if [[ "$input" == "{"* || "$input" == "["* ]]; then
+        jq "$filter" 2>/dev/null <<<"$input"
+        return $?
+    fi
+
+    # Prefer a readable path (regular file or FIFO like /dev/fd/*).
+    if [[ -r "$input" ]]; then
+        jq "$filter" "$input" 2>/dev/null
+        return $?
+    fi
+
+    # Fall back to treating the input as raw JSON.
+    jq "$filter" 2>/dev/null <<<"$input"
 }
 
 # ============================================================
@@ -798,7 +839,7 @@ import_session() {
     local dest="$ACFS_SESSIONS_DIR/${local_id}.json"
 
     if [[ "$is_cass" == "true" ]]; then
-        convert_to_acfs_schema "$(cat "$file")" > "$dest"
+        convert_to_acfs_schema "$file" > "$dest"
     else
         cp "$file" "$dest"
     fi
