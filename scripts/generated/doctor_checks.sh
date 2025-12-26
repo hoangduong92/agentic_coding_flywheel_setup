@@ -99,7 +99,7 @@ declare -a MANIFEST_CHECKS=(
     "tools.atuin	Atuin shell history (Ctrl-R superpowers)	~/.atuin/bin/atuin --version	required"
     "tools.zoxide	Zoxide (better cd)	command -v zoxide	required"
     "tools.ast_grep	ast-grep (used by UBS for syntax-aware scanning)	sg --version	required"
-    "agents.claude	Claude Code	claude --version || claude --help	required"
+    "agents.claude	Claude Code	~/.local/bin/claude --version || ~/.local/bin/claude --help	required"
     "agents.codex	OpenAI Codex CLI	~/.local/bin/codex --version || ~/.local/bin/codex --help	required"
     "agents.gemini	Google Gemini CLI	~/.local/bin/gemini --version || ~/.local/bin/gemini --help	required"
     "tools.vault	HashiCorp Vault CLI	vault --version	required"

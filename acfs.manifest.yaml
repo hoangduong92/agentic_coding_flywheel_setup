@@ -462,18 +462,19 @@ modules:
     optional: false
     enabled_by_default: true
     tags: [recommended, agent]
-    dependencies:
-      - lang.bun
+    dependencies: []
     installed_check:
       run_as: target_user
-      command: "command -v claude"
+      command: "test -x ~/.local/bin/claude"
     install:
-      # Official package (installs `claude` into ~/.bun/bin)
-      - ~/.bun/bin/bun install -g --trust @anthropic-ai/claude-code@stable
+      # Native installer (installs to ~/.local/bin/claude)
+      # This is the official installation method with built-in auto-update
+      - curl -fsSL https://claude.ai/install.sh | bash
     verify:
-      - claude --version || claude --help
+      - ~/.local/bin/claude --version || ~/.local/bin/claude --help
     notes:
-      - "Install Claude Code via official package"
+      - "Uses native installer with built-in 'claude update' command"
+      - "Binary installed to ~/.local/bin/claude"
 
   - id: agents.codex
     description: OpenAI Codex CLI

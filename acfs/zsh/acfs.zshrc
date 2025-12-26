@@ -139,7 +139,7 @@ alias install='sudo apt install'
 alias search='apt search'
 
 # Update agent CLIs
-alias uca='claude update; bun install -g --trust @openai/codex@latest; bun install -g --trust @google/gemini-cli@latest'
+alias uca='~/.local/bin/claude update; bun install -g --trust @openai/codex@latest; bun install -g --trust @google/gemini-cli@latest'
 
 # --- Custom functions ---
 mkcd() { mkdir -p "$1" && cd "$1" || return; }
@@ -333,7 +333,7 @@ acfs() {
 }
 
 # --- Agent aliases (dangerously enabled by design) ---
-alias cc='NODE_OPTIONS="--max-old-space-size=32768" ENABLE_BACKGROUND_TASKS=1 claude --dangerously-skip-permissions'
+alias cc='NODE_OPTIONS="--max-old-space-size=32768" ENABLE_BACKGROUND_TASKS=1 ~/.local/bin/claude --dangerously-skip-permissions'
 alias cod='codex --dangerously-bypass-approvals-and-sandbox'
 alias gmi='gemini --yolo'
 

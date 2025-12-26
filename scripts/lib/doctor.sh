@@ -1060,13 +1060,13 @@ deep_check_agent_auth() {
 check_claude_auth() {
     # Skip if not installed
     if ! command -v claude &>/dev/null; then
-        check "deep.agent.claude_auth" "Claude Code" "warn" "not installed" "bun install -g --trust @anthropic-ai/claude-code"
+        check "deep.agent.claude_auth" "Claude Code" "warn" "not installed" "curl -fsSL https://claude.ai/install.sh | bash"
         return
     fi
 
     # Check if binary works
     if ! claude --version &>/dev/null; then
-        check "deep.agent.claude_auth" "Claude Code auth" "fail" "binary error" "Reinstall: bun install -g --trust @anthropic-ai/claude-code"
+        check "deep.agent.claude_auth" "Claude Code auth" "fail" "binary error" "Reinstall: curl -fsSL https://claude.ai/install.sh | bash"
         return
     fi
 

@@ -69,26 +69,26 @@ install_agents_claude() {
     log_step "Installing agents.claude"
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "dry-run: install: ~/.bun/bin/bun install -g --trust @anthropic-ai/claude-code@stable (target_user)"
+        log_info "dry-run: install: curl -fsSL https://claude.ai/install.sh | bash (target_user)"
     else
         if ! run_as_target_shell <<'INSTALL_AGENTS_CLAUDE'
-~/.bun/bin/bun install -g --trust @anthropic-ai/claude-code@stable
+curl -fsSL https://claude.ai/install.sh | bash
 INSTALL_AGENTS_CLAUDE
         then
-            log_error "agents.claude: install command failed: ~/.bun/bin/bun install -g --trust @anthropic-ai/claude-code@stable"
+            log_error "agents.claude: install command failed: curl -fsSL https://claude.ai/install.sh | bash"
             return 1
         fi
     fi
 
     # Verify
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "dry-run: verify: claude --version || claude --help (target_user)"
+        log_info "dry-run: verify: ~/.local/bin/claude --version || ~/.local/bin/claude --help (target_user)"
     else
         if ! run_as_target_shell <<'INSTALL_AGENTS_CLAUDE'
-claude --version || claude --help
+~/.local/bin/claude --version || ~/.local/bin/claude --help
 INSTALL_AGENTS_CLAUDE
         then
-            log_error "agents.claude: verify failed: claude --version || claude --help"
+            log_error "agents.claude: verify failed: ~/.local/bin/claude --version || ~/.local/bin/claude --help"
             return 1
         fi
     fi
