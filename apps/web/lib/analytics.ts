@@ -951,9 +951,9 @@ export const trackLessonEnter = (
 
   safeSetJSON(LESSON_FUNNEL_STORAGE_KEY, funnelData);
 
-  // Calculate time from previous lesson
+  // Calculate time from previous lesson (only if visiting a different lesson)
   let timeFromPreviousLesson: number | undefined;
-  if (previousLesson >= 0 && funnelData.lessonTimestamps[previousLesson]?.entered) {
+  if (previousLesson >= 0 && previousLesson !== lessonId && funnelData.lessonTimestamps[previousLesson]?.entered) {
     const prevTime = new Date(funnelData.lessonTimestamps[previousLesson].entered!).getTime();
     timeFromPreviousLesson = Math.round((Date.now() - prevTime) / 1000);
   }

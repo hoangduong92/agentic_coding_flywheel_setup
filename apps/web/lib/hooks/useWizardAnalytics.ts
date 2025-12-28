@@ -31,14 +31,17 @@ export function useWizardAnalytics({
   totalSteps = TOTAL_STEPS,
 }: UseWizardAnalyticsOptions) {
   const startTime = useRef<number>(0);
-  const hasTrackedView = useRef<boolean>(false);
+  const trackedStepNumber = useRef<number | null>(null);
   const isCompleted = useRef<boolean>(false);
 
-  // Track step view on mount
+  // Track step view on mount AND when step changes (client-side navigation)
   useEffect(() => {
-    if (hasTrackedView.current) return;
-    hasTrackedView.current = true;
+    // Only track if this is a new step (prevents double-tracking on re-renders)
+    if (trackedStepNumber.current === stepNumber) return;
 
+    // Reset state for new step
+    trackedStepNumber.current = stepNumber;
+    isCompleted.current = false;
     startTime.current = Date.now();
 
     // Track legacy wizard step event
@@ -67,7 +70,8 @@ export function useWizardAnalytics({
 
   // Track step completion
   const markComplete = useCallback((additionalData?: Record<string, unknown>) => {
-    if (isCompleted.current) return;
+    // Ensure we're marking complete for the currently tracked step
+    if (isCompleted.current || trackedStepNumber.current !== stepNumber) return;
     isCompleted.current = true;
 
     const timeSpent = getTimeSpent();
