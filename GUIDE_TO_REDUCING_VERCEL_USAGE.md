@@ -123,10 +123,10 @@ Create `scripts/vercel-ignore-build.sh` in your project:
 ```bash
 #!/bin/bash
 # Vercel Ignored Build Step
-# https://vercel.com/docs/projects/overview#ignored-build-step
+# https://vercel.com/docs/project-configuration/vercel-json#ignorecommand
 #
-# Exit 1 = SKIP build (no relevant changes)
-# Exit 0 = PROCEED with build (relevant changes detected)
+# Exit 0 = SKIP build (no relevant changes)
+# Exit 1 = PROCEED with build (relevant changes detected)
 
 set -e
 
@@ -139,18 +139,18 @@ CURR_SHA="${VERCEL_GIT_COMMIT_SHA:-HEAD}"
 TRIGGER_PATHS=(
     "apps/web/"      # Your app directory
     "package.json"   # Root package.json
-    "bun.lockb"      # Lockfile
+    "bun.lock"       # Lockfile
 )
 
 for path in "${TRIGGER_PATHS[@]}"; do
     if git diff --name-only "$PREV_SHA" "$CURR_SHA" 2>/dev/null | grep -q "^${path}"; then
         echo "Changes detected in: $path"
-        exit 0  # Build
+        exit 1  # Build
     fi
 done
 
 echo "No relevant changes - skipping build"
-exit 1  # Skip
+exit 0  # Skip
 ```
 
 Also add to `vercel.json`:
