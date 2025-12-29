@@ -704,6 +704,7 @@ test_should_run_module_false
 test_generated_defaults
 test_generated_global_override
 test_generated_per_category_override
+test_generated_env_var_csv_override
 
 echo ""
 echo "====================================="
