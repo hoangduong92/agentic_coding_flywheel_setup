@@ -169,6 +169,11 @@ dashboard_serve() {
     # Fallback if hostname -I returned empty
     [[ -z "$ip" ]] && ip="<your-server-ip>"
 
+    # Use the current user for SSH tunnel instructions.
+    # Avoid hard-coding "ubuntu" so TARGET_USER installs aren't confusing.
+    local ssh_user
+    ssh_user="$(whoami 2>/dev/null || echo "ubuntu")"
+
     # Check if port is in use
     if command -v lsof &>/dev/null && lsof -i :"$port" &>/dev/null; then
         echo "Warning: Port $port appears to be in use." >&2
@@ -191,7 +196,7 @@ dashboard_serve() {
 │  It stops when you close this terminal.                     │
 │                                                             │
 │  To view from your laptop (recommended):                     │
-│    ssh -L ${port}:localhost:${port} ubuntu@${ip}                │
+│    ssh -L ${port}:localhost:${port} ${ssh_user}@${ip}                │
 │    then open: http://localhost:${port}                         │
 ╰─────────────────────────────────────────────────────────────╯
 
