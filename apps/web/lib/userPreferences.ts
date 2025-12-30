@@ -52,13 +52,13 @@ export const userPreferencesKeys = {
  * Get the user's selected operating system from localStorage.
  */
 export function getUserOS(): OperatingSystem | null {
-  const stored = safeGetItem(OS_KEY);
-  if (stored === "mac" || stored === "windows" || stored === "linux") {
-    return stored;
-  }
   const fromQuery = getQueryParam(OS_QUERY_KEY);
   if (fromQuery === "mac" || fromQuery === "windows" || fromQuery === "linux") {
     return fromQuery;
+  }
+  const stored = safeGetItem(OS_KEY);
+  if (stored === "mac" || stored === "windows" || stored === "linux") {
+    return stored;
   }
   return null;
 }
@@ -101,14 +101,14 @@ export function detectOS(): OperatingSystem | null {
  * Get the user's VPS IP address from localStorage.
  */
 export function getVPSIP(): string | null {
-  const stored = safeGetItem(VPS_IP_KEY);
-  if (stored && isValidIP(stored)) {
-    return stored.trim();
-  }
-
   const fromQuery = getQueryParam(VPS_IP_QUERY_KEY);
   if (fromQuery && isValidIP(fromQuery)) {
     return fromQuery.trim();
+  }
+
+  const stored = safeGetItem(VPS_IP_KEY);
+  if (stored && isValidIP(stored)) {
+    return stored.trim();
   }
 
   return null;
