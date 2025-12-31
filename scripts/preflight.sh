@@ -338,7 +338,8 @@ check_apt_lock() {
 
 check_user() {
     if [[ "$EUID" -eq 0 ]]; then
-        warn "Running as root" "ACFS will create and install for 'ubuntu' user"
+        local target_user="${TARGET_USER:-ubuntu}"
+        warn "Running as root" "ACFS will create and install for '${target_user}' user"
     else
         pass "User: $(whoami)"
     fi

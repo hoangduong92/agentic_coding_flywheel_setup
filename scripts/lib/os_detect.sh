@@ -64,7 +64,17 @@ is_fresh_vps() {
     fi
 
     # Check for default ubuntu user without customization
-    if [[ -f /home/ubuntu/.bashrc ]] && ! grep -q "ACFS" /home/ubuntu/.bashrc 2>/dev/null; then
+    local target_user="${TARGET_USER:-ubuntu}"
+    local target_home="${TARGET_HOME:-}"
+    if [[ -z "$target_home" ]]; then
+        if [[ "$target_user" == "root" ]]; then
+            target_home="/root"
+        else
+            target_home="/home/$target_user"
+        fi
+    fi
+
+    if [[ -f "$target_home/.bashrc" ]] && ! grep -q "ACFS" "$target_home/.bashrc" 2>/dev/null; then
         ((indicators += 1))
     fi
 
