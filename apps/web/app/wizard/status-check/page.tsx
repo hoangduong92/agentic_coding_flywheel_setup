@@ -263,6 +263,30 @@ export default function StatusCheckPage() {
           </div>
         </AlertCard>
 
+        {/* Wrangler (Cloudflare) headless auth note */}
+        <AlertCard variant="warning" icon={AlertCircle} title="Wrangler: Headless VPS Setup">
+          <div className="space-y-2">
+            <p>
+              <strong>Wrangler requires a browser</strong> for{" "}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">wrangler login</code>,
+              which doesn&apos;t work on a headless VPS.
+            </p>
+            <p className="text-sm font-medium">Solution: Use API Token</p>
+            <ol className="list-decimal list-inside space-y-1 text-sm pl-2">
+              <li>Go to <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener noreferrer" className="text-primary underline">Cloudflare → API Tokens</a></li>
+              <li>Create a token with the permissions you need (e.g., Workers, Pages)</li>
+              <li>Add to your <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">~/.zshrc</code>:</li>
+            </ol>
+            <pre className="rounded bg-muted p-2 text-xs font-mono mt-1">
+              export CLOUDFLARE_API_TOKEN=&quot;your-token-here&quot;{'\n'}
+              export CLOUDFLARE_ACCOUNT_ID=&quot;your-account-id&quot;
+            </pre>
+            <p className="text-xs text-muted-foreground mt-1">
+              Then run <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">source ~/.zshrc</code> or start a new shell.
+            </p>
+          </div>
+        </AlertCard>
+
         <AlertCard variant="success" icon={Bot} title="You don't need to log into everything right now">
           <div className="space-y-2 text-sm">
             <p className="text-muted-foreground">

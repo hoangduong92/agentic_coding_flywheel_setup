@@ -733,7 +733,8 @@ check_core_tools() {
 check_agents() {
     section "Agents"
 
-    check_command "agent.claude" "Claude Code" "claude"
+    check_command "agent.claude" "Claude Code" "claude" \
+        "Re-run: curl -fsSL https://claude.ai/install.sh | bash"
     check_command "agent.codex" "Codex CLI" "codex" "bun install -g --trust @openai/codex@latest"
     check_command "agent.gemini" "Gemini CLI" "gemini" "bun install -g --trust @google/gemini-cli@latest"
 
@@ -915,8 +916,10 @@ check_stack() {
     fi
 
     check_ntm_cass_compat
-    check_command "stack.cm" "CASS Memory" "cm"
-    check_command "stack.caam" "CAAM" "caam"
+    check_command "stack.cm" "CASS Memory" "cm" \
+        "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh | bash -s -- --easy-mode"
+    check_command "stack.caam" "CAAM" "caam" \
+        "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_account_manager/main/install.sh | bash"
 
     # Check MCP Agent Mail
     if command -v am &>/dev/null || [[ -d "$HOME/mcp_agent_mail" ]]; then
@@ -1494,7 +1497,7 @@ check_wrangler_auth() {
             cache_result "wrangler_auth" "CLOUDFLARE_API_TOKEN"
             check "deep.cloud.wrangler_auth" "Wrangler (Cloudflare) auth" "pass" "CLOUDFLARE_API_TOKEN set"
         else
-            check "deep.cloud.wrangler_auth" "Wrangler (Cloudflare) auth" "warn" "not authenticated" "wrangler login"
+            check "deep.cloud.wrangler_auth" "Wrangler (Cloudflare) auth" "warn" "not authenticated" "wrangler login (or set CLOUDFLARE_API_TOKEN for headless)"
         fi
     fi
 }
