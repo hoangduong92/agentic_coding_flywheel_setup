@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
 # ACFS newproj - Create a new project with full ACFS tooling
-# Creates a project with git, beads (bd), and Claude settings
+# Creates a project with git, beads (bd), Claude settings, and AGENTS.md
 # ============================================================
 
 set -e
@@ -13,10 +13,13 @@ YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# Track what was created for summary
+declare -a CREATED_ITEMS=()
+
 print_help() {
     echo "Usage: acfs newproj <project-name> [directory]"
     echo ""
-    echo "Create a new project with ACFS tooling (git, bd, claude settings)"
+    echo "Create a new project with ACFS tooling (git, bd, claude settings, AGENTS.md)"
     echo ""
     echo "Arguments:"
     echo "  project-name    Name of the project (required)"
@@ -26,6 +29,7 @@ print_help() {
     echo "  -h, --help      Show this help message"
     echo "  --no-bd         Skip beads (bd) initialization"
     echo "  --no-claude     Skip Claude settings creation"
+    echo "  --no-agents     Skip AGENTS.md template creation"
     echo ""
     echo "Examples:"
     echo "  acfs newproj myapp"
@@ -33,11 +37,327 @@ print_help() {
     echo "  acfs newproj myapp --no-bd"
 }
 
+# Create AGENTS.md template with ACFS tooling instructions
+# Generic sections are included; project-specific sections have placeholders
+create_agents_template() {
+    local project_name="$1"
+    cat > AGENTS.md << 'AGENTS_EOF'
+# AGENTS.md — PROJECT_NAME_PLACEHOLDER
+
+## RULE 1 – ABSOLUTE (DO NOT EVER VIOLATE THIS)
+
+You may NOT delete any file or directory unless I explicitly give the exact command **in this session**.
+
+- This includes files you just created (tests, tmp files, scripts, etc.).
+- You do not get to decide that something is "safe" to remove.
+- If you think something should be removed, stop and ask. You must receive clear written approval **before** any deletion command is even proposed.
+
+Treat "never delete files without permission" as a hard invariant.
+
+---
+
+## IRREVERSIBLE GIT & FILESYSTEM ACTIONS
+
+Absolutely forbidden unless I give the **exact command and explicit approval** in the same message:
+
+- `git reset --hard`
+- `git clean -fd`
+- `rm -rf`
+- Any command that can delete or overwrite code/data
+
+Rules:
+
+1. If you are not 100% sure what a command will delete, do not propose or run it. Ask first.
+2. Prefer safe tools: `git status`, `git diff`, `git stash`, copying to backups, etc.
+3. After approval, restate the command verbatim, list what it will affect, and wait for confirmation.
+4. When a destructive command is run, record in your response:
+   - The exact user text authorizing it
+   - The command run
+   - When you ran it
+
+If that audit trail is missing, then you must act as if the operation never happened.
+
+---
+
+## Node / JS Toolchain
+
+- Use **bun** for everything JS/TS.
+- ❌ Never use `npm`, `yarn`, or `pnpm`.
+- Lockfiles: only `bun.lock`. Do not introduce any other lockfile.
+- Target **latest Node.js**. No need to support old Node versions.
+- **Note:** `bun install -g <pkg>` is valid syntax (alias for `bun add -g`). Do not "fix" it.
+
+---
+
+## Project Architecture
+
+<!-- CUSTOMIZE: Describe your project's architecture here -->
+
+### Components
+
+<!-- CUSTOMIZE: List your project's main components/domains -->
+
+Example structure:
+- **A) Backend API** — Framework, database, main responsibilities
+- **B) Frontend** — Framework, UI library, key patterns
+- **C) Shared** — Common utilities, types, constants
+
+---
+
+## Repo Layout
+
+<!-- CUSTOMIZE: Document your actual directory structure -->
+
+```
+PROJECT_NAME_PLACEHOLDER/
+├── README.md
+├── AGENTS.md
+├── .beads/                        # Issue tracking (bd)
+├── .claude/                       # Claude Code settings
+│
+└── src/                           # Your source code
+```
+
+---
+
+## Generated Files — NEVER Edit Manually
+
+<!-- CUSTOMIZE: If you have generated files, document them here -->
+
+**Current state:** There are no generated files in this repo.
+
+If/when you add generated artifacts:
+- **Rule:** Never hand-edit generated outputs.
+- **Convention:** Put generated outputs in a clearly labeled directory and document the generator command.
+
+---
+
+## Code Editing Discipline
+
+- Do **not** run scripts that bulk-modify code (codemods, invented one-off scripts, giant `sed`/regex refactors).
+- Large mechanical changes: break into smaller, explicit edits and review diffs.
+- Subtle/complex changes: edit by hand, file-by-file, with careful reasoning.
+
+---
+
+## Backwards Compatibility & File Sprawl
+
+We optimize for a clean architecture now, not backwards compatibility.
+
+- No "compat shims" or "v2" file clones.
+- When changing behavior, migrate callers and remove old code.
+- New files are only for genuinely new domains that don't fit existing modules.
+- The bar for adding files is very high.
+
+---
+
+## Console Output
+
+- Prefer **structured, minimal logs** (avoid spammy debug output).
+- Treat user-facing UX as UI-first; logs are for operators/debugging.
+
+---
+
+## MCP Agent Mail — Multi-Agent Coordination
+
+Agent Mail is available as an MCP server for coordinating work across agents.
+
+What Agent Mail gives:
+- Identities, inbox/outbox, searchable threads.
+- Advisory file reservations (leases) to avoid agents clobbering each other.
+- Persistent artifacts in git (human-auditable).
+
+Core patterns:
+
+1. **Same repo**
+   - Register identity:
+     - `ensure_project` then `register_agent` with the repo's absolute path as `project_key`.
+   - Reserve files before editing:
+     - `file_reservation_paths(project_key, agent_name, ["src/**"], ttl_seconds=3600, exclusive=true)`.
+   - Communicate:
+     - `send_message(..., thread_id="FEAT-123")`.
+     - `fetch_inbox`, then `acknowledge_message`.
+   - Fast reads:
+     - `resource://inbox/{Agent}?project=<abs-path>&limit=20`.
+     - `resource://thread/{id}?project=<abs-path>&include_bodies=true`.
+
+2. **Macros vs granular:**
+   - Prefer macros when speed is more important than fine-grained control:
+     - `macro_start_session`, `macro_prepare_thread`, `macro_file_reservation_cycle`, `macro_contact_handshake`.
+   - Use granular tools when you need explicit behavior.
+
+Common pitfalls:
+- "from_agent not registered" → call `register_agent` with correct `project_key`.
+- `FILE_RESERVATION_CONFLICT` → adjust patterns, wait for expiry, or use non-exclusive reservation.
+
+---
+
+## Landing the Plane (Session Completion)
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   bd sync
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds
+
+---
+
+## Issue Tracking with bd (beads)
+
+All issue tracking goes through **bd**. No other TODO systems.
+
+Key invariants:
+
+- `.beads/` is authoritative state and **must always be committed** with code changes.
+- Do not edit `.beads/*.jsonl` directly; only via `bd`.
+
+### Basics
+
+Check ready work:
+
+```bash
+bd ready --json
+```
+
+Create issues:
+
+```bash
+bd create "Issue title" -t bug|feature|task -p 0-4 --json
+bd create "Issue title" -p 1 --deps discovered-from:bd-123 --json
+```
+
+Update:
+
+```bash
+bd update bd-42 --status in_progress --json
+bd update bd-42 --priority 1 --json
+```
+
+Complete:
+
+```bash
+bd close bd-42 --reason "Completed" --json
+```
+
+Types: `bug`, `feature`, `task`, `epic`, `chore`
+
+Priorities: `0` critical, `1` high, `2` medium (default), `3` low, `4` backlog
+
+Agent workflow:
+
+1. `bd ready` to find unblocked work.
+2. Claim: `bd update <id> --status in_progress`.
+3. Implement + test.
+4. If you discover new work, create a new bead with `discovered-from:<parent-id>`.
+5. Close when done.
+6. Commit `.beads/` in the same commit as code changes.
+
+Never:
+- Use markdown TODO lists.
+- Use other trackers.
+- Duplicate tracking.
+
+---
+
+## Using bv as an AI sidecar
+
+bv is a graph-aware triage engine for Beads projects. Use robot flags for deterministic outputs.
+
+**⚠️ CRITICAL: Use ONLY `--robot-*` flags. Bare `bv` launches an interactive TUI that blocks your session.**
+
+```bash
+bv --robot-triage        # THE MEGA-COMMAND: start here
+bv --robot-next          # Just the single top pick + claim command
+bv --robot-plan          # Parallel execution tracks
+bv --robot-insights      # Full graph metrics
+```
+
+Use bv instead of parsing beads.jsonl—it computes PageRank, critical paths, cycles, and parallel tracks deterministically.
+
+---
+
+## cass — Cross-Agent Search
+
+`cass` indexes prior agent conversations so we can reuse solved problems.
+
+**Rules:** Never run bare `cass` (TUI). Always use `--robot` or `--json`.
+
+```bash
+cass health
+cass search "authentication error" --robot --limit 5
+cass view /path/to/session.jsonl -n 42 --json
+```
+
+Treat cass as a way to avoid re-solving problems other agents already handled.
+
+---
+
+## Memory System: cass-memory
+
+Before starting complex tasks, retrieve relevant context:
+
+```bash
+cm context "<task description>" --json
+```
+
+This returns:
+- **relevantBullets**: Rules that may help with your task
+- **antiPatterns**: Pitfalls to avoid
+- **historySnippets**: Past sessions that solved similar problems
+
+Protocol:
+1. **START**: Run `cm context "<task>" --json` before non-trivial work
+2. **WORK**: Reference rule IDs when following them
+3. **END**: Just finish your work. Learning happens automatically.
+
+---
+
+## UBS Quick Reference
+
+**Golden Rule:** `ubs <changed-files>` before every commit. Exit 0 = safe. Exit >0 = fix & re-run.
+
+```bash
+ubs file.ts file2.py                    # Specific files (< 1s) — USE THIS
+ubs $(git diff --name-only --cached)    # Staged files — before commit
+ubs .                                   # Whole project
+```
+
+**Speed Critical:** Scope to changed files. `ubs src/file.ts` (< 1s) vs `ubs .` (30s).
+
+**Bug Severity:**
+- **Critical** (always fix): Null safety, XSS/injection, async/await, memory leaks
+- **Important** (production): Type narrowing, division-by-zero, resource leaks
+- **Contextual** (judgment): TODO/FIXME, console logs
+AGENTS_EOF
+
+    # Replace placeholder with actual project name
+    sed -i "s/PROJECT_NAME_PLACEHOLDER/$project_name/g" AGENTS.md
+}
+
 main() {
     local project_name=""
     local project_dir=""
     local skip_bd=false
     local skip_claude=false
+    local skip_agents=false
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -52,6 +372,10 @@ main() {
                 ;;
             --no-claude)
                 skip_claude=true
+                shift
+                ;;
+            --no-agents)
+                skip_agents=true
                 shift
                 ;;
             -*)
@@ -112,8 +436,48 @@ main() {
     if [[ ! -d .git ]]; then
         echo -e "${GREEN}Initializing git repository...${NC}"
         git init
+        CREATED_ITEMS+=("Git repository")
+
+        # Create README
         echo "# $project_name" > README.md
-        git add README.md
+        CREATED_ITEMS+=("README.md")
+
+        # Create universal .gitignore (patterns that apply to ALL project types)
+        cat > .gitignore << 'EOF'
+# OS/Editor artifacts
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+.idea/
+.vscode/
+*.sublime-*
+
+# Environment/secrets (never commit these)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts (add project-specific patterns below)
+dist/
+build/
+*.pyc
+__pycache__/
+node_modules/
+.venv/
+venv/
+EOF
+        CREATED_ITEMS+=(".gitignore")
+
+        git add README.md .gitignore
 
         # Check if git user is configured before committing
         if git config user.name &>/dev/null && git config user.email &>/dev/null; then
@@ -133,6 +497,7 @@ main() {
             if [[ ! -d .beads ]]; then
                 echo -e "${GREEN}Initializing beads (bd)...${NC}"
                 bd init
+                CREATED_ITEMS+=("Beads tracking (.beads/)")
             else
                 echo -e "${CYAN}Beads already initialized, skipping${NC}"
             fi
@@ -158,9 +523,30 @@ main() {
 [permissions]
 # allow = ["Bash(npm:*)", "Bash(bun:*)"]
 EOF
+            CREATED_ITEMS+=("Claude settings (.claude/)")
         else
             echo -e "${CYAN}Claude settings already exist, skipping${NC}"
         fi
+    fi
+
+    # Create AGENTS.md template if not skipped
+    if [[ "$skip_agents" == "false" ]]; then
+        if [[ ! -f AGENTS.md ]]; then
+            echo -e "${GREEN}Creating AGENTS.md template...${NC}"
+            create_agents_template "$project_name"
+            CREATED_ITEMS+=("AGENTS.md (template)")
+        else
+            echo -e "${CYAN}AGENTS.md already exists, skipping${NC}"
+        fi
+    fi
+
+    # Print summary of what was created
+    echo ""
+    if [[ ${#CREATED_ITEMS[@]} -gt 0 ]]; then
+        echo -e "${GREEN}Created:${NC}"
+        for item in "${CREATED_ITEMS[@]}"; do
+            echo -e "  ${GREEN}✓${NC} $item"
+        done
     fi
 
     echo ""
@@ -168,6 +554,9 @@ EOF
     echo ""
     echo "Next steps:"
     echo "  cd $project_dir"
+    if [[ "$skip_agents" == "false" ]] && [[ -f AGENTS.md ]]; then
+        echo "  # Edit AGENTS.md to customize for your project"
+    fi
     if [[ "$skip_bd" == "false" ]] && command -v bd &>/dev/null; then
         echo "  bd ready                    # Check for work"
         echo "  bd create --title=\"...\"    # Create tasks"
