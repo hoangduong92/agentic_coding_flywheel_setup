@@ -650,6 +650,144 @@ The installer transforms a fresh VPS. The update command maintains an existing i
 
 ---
 
+## ACFS CLI Commands
+
+After installation, the `acfs` command provides a unified interface for managing your environment. Each subcommand is designed to be fast, informative, and scriptable.
+
+### Quick Reference
+
+```bash
+acfs info                    # Lightning-fast system overview
+acfs cheatsheet              # Discover installed aliases
+acfs dashboard generate      # Generate HTML status page
+acfs doctor                  # Health checks
+acfs update                  # Update all tools
+acfs services-setup          # Configure agent credentials
+acfs continue                # View upgrade progress after reboot
+```
+
+### `acfs info` — System Overview
+
+Displays installation status in under 1 second by reading cached state (no verification).
+
+```bash
+acfs info                # Terminal output (default)
+acfs info --json         # JSON output for scripting
+acfs info --html         # Self-contained HTML page
+acfs info --minimal      # Just essentials (IP, key commands)
+```
+
+Example output:
+```
+╔══════════════════════════════════════════════════════════════╗
+║                    ACFS System Info                           ║
+╠══════════════════════════════════════════════════════════════╣
+║  Host: vps-12345.contabo.net                                  ║
+║  IP: 192.168.1.100                                            ║
+║  User: ubuntu                                                 ║
+║  Uptime: 3 days, 4 hours                                      ║
+║                                                               ║
+║  Quick Commands:                                              ║
+║    cc    → Claude Code (dangerous mode)                       ║
+║    cod   → Codex CLI (dangerous mode)                         ║
+║    gmi   → Gemini CLI (yolo mode)                             ║
+║    ntm   → Named Tmux Manager                                 ║
+╚══════════════════════════════════════════════════════════════╝
+```
+
+**Design Philosophy:**
+- **Speed**: Must complete in <1 second
+- **Read-only**: Never verifies or tests (that's doctor's job)
+- **Offline**: No network calls required
+- **Fallback**: Graceful degradation if data missing
+
+### `acfs cheatsheet` — Alias Discovery
+
+Parses `~/.acfs/zsh/acfs.zshrc` to show all installed aliases and commands.
+
+```bash
+acfs cheatsheet              # List all aliases
+acfs cheatsheet git          # Filter by category or search term
+acfs cheatsheet --category Agents
+acfs cheatsheet --search docker
+acfs cheatsheet --json       # JSON output for tooling
+```
+
+Example output:
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  ACFS Cheatsheet                                               ║
+╠═══════════════════════════════════════════════════════════════╣
+║  Agents                                                        ║
+║    cc   → claude --dangerously-skip-permissions                ║
+║    cod  → codex --dangerously-bypass-approvals-and-sandbox     ║
+║    gmi  → gemini --yolo                                        ║
+║                                                                ║
+║  Git                                                           ║
+║    gs   → git status                                           ║
+║    gp   → git push                                             ║
+║    gl   → git pull                                             ║
+║    gco  → git checkout                                         ║
+║                                                                ║
+║  Modern CLI                                                    ║
+║    ls   → lsd --inode --long --all                             ║
+║    cat  → bat                                                  ║
+║    grep → rg                                                   ║
+║    lg   → lazygit                                              ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+### `acfs dashboard` — HTML Status Page
+
+Generates a self-contained HTML dashboard and optionally serves it.
+
+```bash
+acfs dashboard generate              # Generate ~/.acfs/dashboard/index.html
+acfs dashboard generate --force      # Force regeneration
+acfs dashboard serve                 # Serve on localhost:8080
+acfs dashboard serve --port 3000     # Custom port
+acfs dashboard serve --public        # Bind to 0.0.0.0
+```
+
+The dashboard provides:
+- System health at a glance
+- Tool versions and status
+- Quick command reference
+- Recent activity summary
+
+### `acfs services-setup` — Credential Configuration
+
+Interactive wizard for configuring AI agent credentials and cloud service logins.
+
+```bash
+acfs services-setup          # Run full setup wizard
+```
+
+Guides you through:
+- **Claude Code**: API key configuration
+- **Codex CLI**: ChatGPT account login
+- **Gemini CLI**: Google account authentication
+- **GitHub CLI**: `gh auth login`
+- **Cloud CLIs**: Wrangler, Supabase, Vercel authentication
+
+Also offers to install the optional **Claude Code guard hook** that blocks destructive commands like `rm -rf /`.
+
+### `acfs continue` — Upgrade Progress
+
+After an Ubuntu upgrade reboot, view installation progress:
+
+```bash
+acfs continue                # Show current upgrade status
+```
+
+Displays:
+- Original Ubuntu version
+- Target version
+- Current upgrade stage
+- Next steps after completion
+
+---
+
 ## Interactive Onboarding
 
 After installation, users can learn the ACFS workflow through an interactive tutorial system. The onboarding TUI guides users through 9 lessons covering Linux basics through full agentic workflows.
@@ -741,6 +879,36 @@ ACFS installs a comprehensive suite of **30+ tools** organized into categories:
 | **dnsutils** | `dig` | DNS debugging |
 | **netcat** | `nc` | Network debugging |
 | **strace** | `strace` | Syscall tracing |
+
+### Networking
+
+| Tool | Command | Description |
+|------|---------|-------------|
+| **Tailscale** | `tailscale` | Zero-config mesh VPN |
+
+**Tailscale Integration:**
+
+Tailscale provides secure, encrypted networking between your devices without complex firewall configuration:
+
+```bash
+# Authenticate and join your tailnet
+tailscale up
+
+# Check connection status
+tailscale status
+
+# Get your Tailscale IP
+tailscale ip
+
+# SSH over Tailscale (bypasses firewalls)
+ssh ubuntu@your-vps.tailnet-name.ts.net
+```
+
+Benefits for agentic workflows:
+- **Firewall-free access**: Connect even when behind NAT or restrictive firewalls
+- **MagicDNS**: Access your VPS by hostname instead of IP
+- **SSH keys over Tailscale**: Use `tailscale ssh` for key-free authentication
+- **ACLs**: Fine-grained access control for team environments
 
 ### AI Coding Agents
 
@@ -974,6 +1142,27 @@ ACFS deploys optimized configuration files to `~/.acfs/` on the target VPS.
 
 A comprehensive zsh configuration that's sourced by `~/.zshrc`:
 
+**Oh-My-Zsh Plugins (14 total):**
+
+| Plugin | Category | What It Provides |
+|--------|----------|------------------|
+| `git` | VCS | 150+ git aliases (gs, gp, gl, gco, gcm, etc.) |
+| `sudo` | Shell | Double-tap Esc to prefix previous command with sudo |
+| `colored-man-pages` | Shell | Colorized man pages for better readability |
+| `command-not-found` | Shell | Suggests packages when command not found |
+| `docker` | Containers | Docker command completion and aliases |
+| `docker-compose` | Containers | docker-compose completion and aliases |
+| `python` | Lang | Python aliases (pyfind, pyclean, pygrep) |
+| `pip` | Lang | pip completion and cache management |
+| `tmux` | Terminal | tmux aliases (ta, tad, ts, tl, tkss) |
+| `tmuxinator` | Terminal | tmuxinator project completion |
+| `systemd` | System | systemctl aliases (sc-status, sc-start, sc-stop) |
+| `rsync` | Tools | rsync completion and common flag aliases |
+| `zsh-autosuggestions` | UX | Fish-like autosuggestions from history |
+| `zsh-syntax-highlighting` | UX | Real-time command syntax highlighting |
+
+> **Note**: `zsh-autosuggestions` and `zsh-syntax-highlighting` are custom plugins installed from GitHub. They must be listed last for optimal performance.
+
 **Path Configuration:**
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -1117,6 +1306,160 @@ gum_choose               # Selection menu
 ```
 
 Falls back to basic echo if Gum is not installed.
+
+### `error_tracking.sh`
+
+Sophisticated error collection and reporting:
+
+```bash
+track_error "phase" "step" "error_message"
+track_warning "phase" "step" "warning_message"
+get_error_report                    # Generate structured error report
+get_error_count                     # Count of tracked errors
+has_errors                          # Boolean check for any errors
+```
+
+Features:
+- Collects errors without aborting execution
+- Associates errors with phase and step context
+- Generates end-of-run summary reports
+- Distinguishes warnings from errors
+
+### `state.sh`
+
+State machine management for installation progress (v3 schema):
+
+```bash
+state_init                          # Initialize state file
+state_get_phase                     # Current phase
+state_set_phase "phase_name"        # Set current phase
+state_mark_complete "phase_name"    # Mark phase complete
+state_has_completed "phase_name"    # Check if phase done
+state_save                          # Persist to disk (atomic)
+state_load                          # Load from disk
+```
+
+The state file (`~/.acfs/state.json`) uses atomic writes to prevent corruption.
+
+### `contract.sh`
+
+Runtime contract validation for generated scripts:
+
+```bash
+acfs_require_contract "module_id"   # Assert environment is ready
+acfs_check_contract                 # Non-fatal contract check
+```
+
+Validates that required environment variables and functions exist before execution:
+- `TARGET_USER`, `TARGET_HOME`, `MODE`
+- `ACFS_BOOTSTRAP_DIR`, `ACFS_LIB_DIR`
+- Logging functions: `log_detail`, `log_success`, etc.
+
+### `smoke_test.sh`
+
+Post-install verification that runs automatically after installation:
+
+```bash
+run_smoke_test                      # Execute all smoke tests
+```
+
+**Critical Checks** (must pass):
+- Running as ubuntu user
+- Passwordless sudo enabled
+- Zsh is default shell
+- Core tools accessible (bun, uv, cargo)
+
+**Non-Critical Checks** (warnings only):
+- Agent authentication configured
+- Cloud CLIs authenticated
+- Optional tools installed
+
+Example output:
+```
+[Smoke Test]
+  ✅ Running as ubuntu user
+  ✅ Passwordless sudo enabled
+  ✅ Zsh is default shell
+  ✅ bun --version works
+  ⚠️  Codex not authenticated (run: codex login)
+  ✅ 8/9 checks passed
+```
+
+### `session.sh`
+
+Agent session export functionality for sharing and replay:
+
+```bash
+session_export "claude-code" "session_id" "/output/path"
+session_list                        # List exportable sessions
+session_validate "/export/file.json"
+```
+
+Implements the **Session Export Schema** for cross-agent sharing:
+
+```typescript
+interface SessionExport {
+  schema_version: 1;
+  exported_at: string;              // ISO8601
+  session_id: string;
+  agent: "claude-code" | "codex" | "gemini";
+  model: string;
+  summary: string;
+  duration_minutes: number;
+  stats: {
+    turns: number;
+    files_created: number;
+    files_modified: number;
+    commands_run: number;
+  };
+  outcomes: Array<{
+    type: "file_created" | "file_modified" | "command_run";
+    path?: string;
+    description: string;
+  }>;
+  key_prompts: string[];            // Notable prompts for learning
+  sanitized_transcript: Array<{
+    role: "user" | "assistant";
+    content: string;
+    timestamp: string;
+  }>;
+}
+```
+
+### `tailscale.sh`
+
+Zero-config VPN setup for secure remote access:
+
+```bash
+install_tailscale                   # Install via official APT repo
+verify_tailscale                    # Check installation
+tailscale_status                    # Get connection status
+```
+
+Tailscale provides:
+- **Secure mesh networking** between your devices
+- **SSH over Tailscale** for firewall-free access
+- **MagicDNS** for hostname-based addressing
+- **ACL-based access control**
+
+After installation, run `tailscale up` to authenticate and join your tailnet.
+
+### `ubuntu_upgrade.sh`
+
+Multi-reboot Ubuntu version upgrade automation:
+
+```bash
+start_ubuntu_upgrade                # Begin upgrade chain
+check_upgrade_status                # Current upgrade state
+resume_upgrade_after_reboot         # Continue after reboot
+```
+
+Handles the complex multi-step Ubuntu upgrade process:
+1. Detects current version
+2. Calculates upgrade path (e.g., 24.04 → 25.04 → 25.10)
+3. Performs sequential `do-release-upgrade` operations
+4. Installs systemd service for post-reboot resume
+5. Continues ACFS installation after reaching target
 
 ---
 
@@ -2512,15 +2855,40 @@ ACFS_REF=abc1234 curl -fsSL "..." | bash -s -- --yes --mode vibe
 
 > **Tip:** Always match the URL path with `ACFS_REF` so the initial script and all subsequently fetched scripts come from the same ref.
 
-### Skip Flags
+### Complete Installer CLI Options
 
-Control what gets installed:
+The installer supports extensive command-line customization:
 
+**Execution Control:**
 ```bash
---skip-postgres    # Skip PostgreSQL 18
---skip-vault       # Skip HashiCorp Vault
---skip-cloud       # Skip Wrangler, Supabase, Vercel CLIs
---skip-preflight   # Skip pre-flight validation
+--yes, -y              # Skip all prompts (non-interactive)
+--dry-run              # Simulate without making changes
+--print                # Print what would be installed
+--mode vibe|safe       # Installation mode (default: vibe)
+--interactive          # Force interactive mode with prompts
+--strict               # Abort on any error (vs. continue with warnings)
+```
+
+**Resume & State:**
+```bash
+--resume               # Resume from last checkpoint
+--force-reinstall      # Ignore state, reinstall everything
+--reset-state          # Clear state.json and start fresh
+```
+
+**Ubuntu Upgrade:**
+```bash
+--skip-ubuntu-upgrade           # Don't upgrade Ubuntu version
+--target-ubuntu=25.10           # Specify target Ubuntu version
+--target-ubuntu 25.04           # Alternative syntax
+```
+
+**Skip Flags:**
+```bash
+--skip-postgres        # Skip PostgreSQL 18
+--skip-vault           # Skip HashiCorp Vault
+--skip-cloud           # Skip Wrangler, Supabase, Vercel CLIs
+--skip-preflight       # Skip pre-flight validation
 ```
 
 ### Module Selection
@@ -2593,8 +2961,8 @@ ACFS is actively developed. Here's what's coming:
 ### Near-Term (Q1 2025)
 
 - [ ] **Full manifest-driven execution**: install.sh consumes generated scripts
-- [ ] **Tailscale integration**: Zero-config VPN for secure remote access
-- [ ] **Accounts wizard step**: Guide users through service account setup
+- [x] **Tailscale integration**: Zero-config VPN for secure remote access ✓
+- [x] **Services setup wizard**: Guide users through service account setup (`acfs services-setup`) ✓
 - [ ] **Interactive module selection**: Choose what to install via TUI
 
 ### Mid-Term (Q2 2025)
