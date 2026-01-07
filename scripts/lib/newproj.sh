@@ -2,9 +2,13 @@
 # ============================================================
 # ACFS newproj - Create a new project with full ACFS tooling
 # Creates a project with git, beads (bd), Claude settings, and AGENTS.md
+# Supports both CLI mode and interactive TUI wizard mode
 # ============================================================
 
 set -e
+
+# Get script directory for sourcing other modules
+NEWPROJ_SCRIPT_DIR="${NEWPROJ_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 
 # Colors
 RED='\033[0;31m'
@@ -16,25 +20,89 @@ NC='\033[0m'
 # Track what was created for summary
 declare -a CREATED_ITEMS=()
 
+# ============================================================
+# Environment Detection
+# ============================================================
+
+# Check if running in a CI environment
+is_ci_environment() {
+    [[ -n "${CI:-}" ]] || \
+    [[ -n "${GITHUB_ACTIONS:-}" ]] || \
+    [[ -n "${GITLAB_CI:-}" ]] || \
+    [[ -n "${JENKINS_URL:-}" ]] || \
+    [[ -n "${TRAVIS:-}" ]] || \
+    [[ -n "${CIRCLECI:-}" ]] || \
+    [[ "${TERM:-}" == "dumb" ]]
+}
+
+# Check if stdin is a TTY (not piped)
+is_stdin_tty() {
+    [[ -t 0 ]]
+}
+
+# Check if stdout is a TTY
+is_stdout_tty() {
+    [[ -t 1 ]]
+}
+
+# Get terminal dimensions
+get_terminal_size() {
+    local cols lines
+    cols=$(tput cols 2>/dev/null || echo 0)
+    lines=$(tput lines 2>/dev/null || echo 0)
+    echo "$cols $lines"
+}
+
+# Check if terminal meets minimum size requirements
+check_terminal_size() {
+    local min_cols="${1:-60}"
+    local min_lines="${2:-15}"
+
+    local size
+    size=$(get_terminal_size)
+    local cols="${size%% *}"
+    local lines="${size##* }"
+
+    if [[ "$cols" -lt "$min_cols" ]] || [[ "$lines" -lt "$min_lines" ]]; then
+        echo "Terminal too small: ${cols}x${lines} (minimum: ${min_cols}x${min_lines})"
+        return 1
+    fi
+    return 0
+}
+
+# Check if TUI module is available
+check_tui_available() {
+    local screens_module="$NEWPROJ_SCRIPT_DIR/newproj_screens.sh"
+    if [[ ! -f "$screens_module" ]]; then
+        echo "TUI module not found: $screens_module"
+        return 1
+    fi
+    return 0
+}
+
 print_help() {
-    echo "Usage: acfs newproj <project-name> [directory]"
+    echo "Usage: acfs newproj [options] [project-name] [directory]"
     echo ""
     echo "Create a new project with ACFS tooling (git, bd, claude settings, AGENTS.md)"
     echo ""
     echo "Arguments:"
-    echo "  project-name    Name of the project (required)"
+    echo "  project-name    Name of the project (required in CLI mode)"
     echo "  directory       Directory path (default: /data/projects/<project-name>)"
     echo ""
     echo "Options:"
     echo "  -h, --help      Show this help message"
+    echo "  -i, --interactive"
+    echo "                  Launch interactive TUI wizard"
     echo "  --no-bd         Skip beads (bd) initialization"
     echo "  --no-claude     Skip Claude settings creation"
     echo "  --no-agents     Skip AGENTS.md template creation"
     echo ""
     echo "Examples:"
-    echo "  acfs newproj myapp"
-    echo "  acfs newproj myapp /home/ubuntu/projects/myapp"
-    echo "  acfs newproj myapp --no-bd"
+    echo "  acfs newproj myapp                       # CLI mode"
+    echo "  acfs newproj myapp /home/user/projects   # CLI mode with custom dir"
+    echo "  acfs newproj --interactive               # TUI wizard"
+    echo "  acfs newproj -i                          # TUI wizard (short form)"
+    echo "  acfs newproj -i myapp                    # TUI with pre-filled name"
 }
 
 # Create AGENTS.md template with ACFS tooling instructions
@@ -352,12 +420,94 @@ AGENTS_EOF
     sed -i "s/PROJECT_NAME_PLACEHOLDER/$project_name/g" AGENTS.md
 }
 
+# ============================================================
+# Interactive Mode
+# ============================================================
+
+# Run the interactive TUI wizard
+# Usage: run_interactive_mode [prefill_name] [prefill_dir]
+run_interactive_mode() {
+    local prefill_name="${1:-}"
+    local prefill_dir="${2:-}"
+
+    # Pre-flight checks for interactive mode
+    echo -e "${CYAN}Checking interactive mode requirements...${NC}"
+
+    # Check 1: CI environment
+    if is_ci_environment; then
+        echo -e "${RED}Error: Interactive mode cannot run in CI environment${NC}" >&2
+        echo -e "${YELLOW}Detected CI environment variables or TERM=dumb${NC}" >&2
+        echo -e "${YELLOW}Use CLI mode instead: acfs newproj <project-name>${NC}" >&2
+        return 1
+    fi
+
+    # Check 2: TTY requirement
+    if ! is_stdin_tty; then
+        echo -e "${RED}Error: Interactive mode requires a terminal (stdin is not a TTY)${NC}" >&2
+        echo -e "${YELLOW}Cannot run in piped input mode${NC}" >&2
+        echo -e "${YELLOW}Use CLI mode instead: acfs newproj <project-name>${NC}" >&2
+        return 1
+    fi
+
+    if ! is_stdout_tty; then
+        echo -e "${RED}Error: Interactive mode requires a terminal (stdout is not a TTY)${NC}" >&2
+        echo -e "${YELLOW}Cannot run with redirected output${NC}" >&2
+        echo -e "${YELLOW}Use CLI mode instead: acfs newproj <project-name>${NC}" >&2
+        return 1
+    fi
+
+    # Check 3: Terminal size
+    local size_error
+    size_error=$(check_terminal_size 60 15) || {
+        echo -e "${RED}Error: $size_error${NC}" >&2
+        echo -e "${YELLOW}Please resize your terminal and try again${NC}" >&2
+        return 1
+    }
+
+    # Check 4: TUI module availability
+    local tui_error
+    tui_error=$(check_tui_available) || {
+        echo -e "${RED}Error: $tui_error${NC}" >&2
+        echo -e "${YELLOW}The TUI wizard module may not be installed correctly${NC}" >&2
+        echo -e "${YELLOW}Try reinstalling ACFS or use CLI mode${NC}" >&2
+        return 1
+    }
+
+    echo -e "${GREEN}All checks passed, launching wizard...${NC}"
+    echo ""
+
+    # Source the screens module
+    source "$NEWPROJ_SCRIPT_DIR/newproj_screens.sh"
+
+    # Pre-fill state if arguments provided
+    if [[ -n "$prefill_name" ]]; then
+        echo -e "${CYAN}Pre-filling project name: $prefill_name${NC}"
+        state_set "project_name" "$prefill_name"
+    fi
+
+    if [[ -n "$prefill_dir" ]]; then
+        echo -e "${CYAN}Pre-filling project directory: $prefill_dir${NC}"
+        state_set "project_dir" "$prefill_dir"
+    fi
+
+    # Run the wizard
+    if run_wizard; then
+        return 0
+    else
+        # Wizard was cancelled or failed
+        echo ""
+        echo -e "${YELLOW}Wizard cancelled or failed${NC}"
+        return 1
+    fi
+}
+
 main() {
     local project_name=""
     local project_dir=""
     local skip_bd=false
     local skip_claude=false
     local skip_agents=false
+    local interactive_mode=false
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -365,6 +515,10 @@ main() {
             -h|--help)
                 print_help
                 exit 0
+                ;;
+            -i|--interactive)
+                interactive_mode=true
+                shift
                 ;;
             --no-bd)
                 skip_bd=true
@@ -397,6 +551,12 @@ main() {
                 ;;
         esac
     done
+
+    # Handle interactive mode
+    if [[ "$interactive_mode" == "true" ]]; then
+        run_interactive_mode "$project_name" "$project_dir"
+        return $?
+    fi
 
     # Validate project name
     if [[ -z "$project_name" ]]; then
@@ -605,4 +765,7 @@ EOF
     echo "  cc                          # Start Claude Code"
 }
 
-main "$@"
+# Only run main if script is executed directly, not sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
