@@ -36,7 +36,7 @@ render_welcome_screen() {
     ║     ██║  ██║╚██████╗ ██║      ███████║                ║
     ║     ╚═╝  ╚═╝ ╚═════╝ ╚═╝      ╚══════╝                ║
     ║                                                       ║
-    ║          Agentic Coding Flywheel Setup               ║
+    ║          Agentic Coding Flywheel Setup                ║
     ║                                                       ║
     ╚═══════════════════════════════════════════════════════╝
 EOF
