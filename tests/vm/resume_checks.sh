@@ -82,7 +82,7 @@ init_state_with_completed() {
   ACFS_HOME="$(dirname "$state_file")"
   export MODE="vibe"
   export TARGET_USER="ubuntu"
-  export ACFS_VERSION="0.1.0"
+  export ACFS_VERSION="0.3.0"
 
   state_init
 

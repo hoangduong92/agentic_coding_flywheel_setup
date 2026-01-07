@@ -1,6 +1,6 @@
 {
   "name": "@acfs/manifest",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Parser and utilities for ACFS manifest files",
   "type": "module",
   "main": "./dist/index.js",
