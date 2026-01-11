@@ -19,6 +19,7 @@ import {
   Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import {
   type Lesson,
   LESSONS,
@@ -541,15 +542,20 @@ export function LessonContent({ lesson }: Props) {
                 </div>
               )}
 
-              {/* Custom lesson content */}
+              {/* Custom lesson content with error boundary */}
               <article>
-                {lessonContent ? (
-                  lessonContent
-                ) : (
-                  <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-8 text-center">
-                    <p className="text-white/70">Lesson content not found for: {lesson.slug}</p>
-                  </div>
-                )}
+                <ErrorBoundary
+                  backLink="/learn"
+                  backLinkLabel="Learning Hub"
+                >
+                  {lessonContent ? (
+                    lessonContent
+                  ) : (
+                    <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-8 text-center">
+                      <p className="text-white/70">Lesson content not found for: {lesson.slug}</p>
+                    </div>
+                  )}
+                </ErrorBoundary>
               </article>
 
               {/* Jaw-dropping completion card */}
