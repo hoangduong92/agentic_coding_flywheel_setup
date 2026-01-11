@@ -2,12 +2,12 @@
 #
 # onboard - ACFS Interactive Onboarding TUI
 #
-# Teaches users the ACFS workflow through 11 interactive lessons.
+# Teaches users the ACFS workflow through interactive lessons.
 # Uses gum for TUI elements with fallback to basic bash menus.
 #
 # Usage:
 #   onboard           # Launch interactive menu
-#   onboard N         # Jump to lesson N (1-11)
+#   onboard N         # Jump to lesson N (1-based)
 #   onboard reset     # Reset progress
 #   onboard status    # Show completion status
 #
@@ -20,6 +20,7 @@ set -euo pipefail
 
 LESSONS_DIR="${ACFS_LESSONS_DIR:-$HOME/.acfs/onboard/lessons}"
 PROGRESS_FILE="${ACFS_PROGRESS_FILE:-$HOME/.acfs/onboard_progress.json}"
+PROGRESS_LOCK_FILE="${PROGRESS_FILE}.lock"
 VERSION="0.1.0"
 
 # Source gum_ui library if available for consistent theming
@@ -79,6 +80,9 @@ declare -gA LESSON_SUMMARIES=(
     [9]="Multi-repo sync with ru sync|AI-driven commits via agent-sweep|Parallel workflow automation"
     [10]="DCG command safety|Protection packs|Allow-once workflow"
 )
+
+# Number of lessons (derived from array length for maintainability)
+NUM_LESSONS=${#LESSON_TITLES[@]}
 
 # Service definitions for authentication flow
 declare -a AUTH_SERVICES=(
@@ -226,16 +230,28 @@ get_next_incomplete() {
 }
 
 # Mark a lesson as completed
+# Uses file locking to prevent race conditions with concurrent calls.
 mark_completed() {
     local lesson=$1
 
     if command -v jq &>/dev/null; then
         local tmp
         local progress_dir
+        local lock_fd
         progress_dir="$(dirname "$PROGRESS_FILE")"
         mkdir -p "$progress_dir" 2>/dev/null || true
+
+        # Acquire exclusive lock (wait up to 5 seconds)
+        exec {lock_fd}>"$PROGRESS_LOCK_FILE"
+        if ! flock -x -w 5 "$lock_fd" 2>/dev/null; then
+            echo -e "${YELLOW}Warning: could not acquire progress lock.${NC}"
+            exec {lock_fd}>&- 2>/dev/null || true
+            return 0
+        fi
+
         tmp=$(mktemp "${progress_dir}/.acfs_onboard.XXXXXX" 2>/dev/null) || {
             echo -e "${YELLOW}Warning: could not save progress (mktemp failed).${NC}"
+            exec {lock_fd}>&- 2>/dev/null || true
             return 0
         }
 
@@ -250,11 +266,15 @@ mark_completed() {
             mv -- "$tmp" "$PROGRESS_FILE" 2>/dev/null || {
                 rm -f -- "$tmp" 2>/dev/null || true
                 echo -e "${YELLOW}Warning: could not save progress (mv failed).${NC}"
+                exec {lock_fd}>&- 2>/dev/null || true
                 return 0
             }
         else
             rm -f -- "$tmp" 2>/dev/null || true
         fi
+
+        # Release lock
+        exec {lock_fd}>&- 2>/dev/null || true
     else
         # Fallback: warn user that progress is not saved
         echo -e "${YELLOW}Warning: 'jq' not found. Progress will NOT be saved.${NC}"
@@ -263,16 +283,28 @@ mark_completed() {
 }
 
 # Update current lesson without marking complete
+# Uses file locking to prevent race conditions with concurrent calls.
 set_current() {
     local lesson=$1
 
     if command -v jq &>/dev/null; then
         local tmp
         local progress_dir
+        local lock_fd
         progress_dir="$(dirname "$PROGRESS_FILE")"
         mkdir -p "$progress_dir" 2>/dev/null || true
+
+        # Acquire exclusive lock (wait up to 5 seconds)
+        exec {lock_fd}>"$PROGRESS_LOCK_FILE"
+        if ! flock -x -w 5 "$lock_fd" 2>/dev/null; then
+            echo -e "${YELLOW}Warning: could not acquire progress lock.${NC}"
+            exec {lock_fd}>&- 2>/dev/null || true
+            return 0
+        fi
+
         tmp=$(mktemp "${progress_dir}/.acfs_onboard.XXXXXX" 2>/dev/null) || {
             echo -e "${YELLOW}Warning: could not update progress (mktemp failed).${NC}"
+            exec {lock_fd}>&- 2>/dev/null || true
             return 0
         }
 
@@ -283,19 +315,33 @@ set_current() {
             mv -- "$tmp" "$PROGRESS_FILE" 2>/dev/null || {
                 rm -f -- "$tmp" 2>/dev/null || true
                 echo -e "${YELLOW}Warning: could not update progress (mv failed).${NC}"
+                exec {lock_fd}>&- 2>/dev/null || true
                 return 0
             }
         else
             rm -f -- "$tmp" 2>/dev/null || true
         fi
+
+        # Release lock
+        exec {lock_fd}>&- 2>/dev/null || true
     fi
 }
 
 # Reset progress
+# Uses file locking to prevent race conditions with concurrent calls.
 reset_progress() {
     local progress_dir
+    local lock_fd
     progress_dir="$(dirname "$PROGRESS_FILE")"
     mkdir -p "$progress_dir" 2>/dev/null || true
+
+    # Acquire exclusive lock (wait up to 5 seconds)
+    exec {lock_fd}>"$PROGRESS_LOCK_FILE"
+    if ! flock -x -w 5 "$lock_fd" 2>/dev/null; then
+        echo -e "${YELLOW}Warning: could not acquire progress lock.${NC}"
+        exec {lock_fd}>&- 2>/dev/null || true
+        return 0
+    fi
 
     if [[ -f "$PROGRESS_FILE" ]]; then
         local backup
@@ -311,6 +357,7 @@ reset_progress() {
     local tmp
     tmp=$(mktemp "${progress_dir}/.acfs_onboard.XXXXXX" 2>/dev/null) || {
         echo -e "${YELLOW}Warning: could not reset progress (mktemp failed).${NC}"
+        exec {lock_fd}>&- 2>/dev/null || true
         return 0
     }
     if cat > "$tmp" <<EOF
@@ -325,13 +372,18 @@ EOF
         mv -- "$tmp" "$PROGRESS_FILE" 2>/dev/null || {
             rm -f -- "$tmp" 2>/dev/null || true
             echo -e "${YELLOW}Warning: could not reset progress (mv failed).${NC}"
+            exec {lock_fd}>&- 2>/dev/null || true
             return 0
         }
     else
         rm -f -- "$tmp" 2>/dev/null || true
         echo -e "${YELLOW}Warning: could not reset progress (write failed).${NC}"
+        exec {lock_fd}>&- 2>/dev/null || true
         return 0
     fi
+
+    # Release lock
+    exec {lock_fd}>&- 2>/dev/null || true
     echo -e "${GREEN}Progress reset!${NC}"
 }
 
@@ -892,7 +944,7 @@ show_celebration() {
             "$(gum style --foreground "$ACFS_MUTED" 'You learned:')" \
             "$summary_text" \
             "" \
-            "$(gum style --foreground "$ACFS_ACCENT" "Progress: $((idx + 1))/11 lessons")"
+            "$(gum style --foreground "$ACFS_ACCENT" "Progress: $((idx + 1))/$NUM_LESSONS lessons")"
 
         sleep 2
     else
@@ -913,7 +965,7 @@ show_celebration() {
         fi
 
         echo ""
-        echo -e "${CYAN}Progress: $((idx + 1))/11 lessons${NC}"
+        echo -e "${CYAN}Progress: $((idx + 1))/$NUM_LESSONS lessons${NC}"
         echo ""
         sleep 2
     fi
@@ -939,7 +991,7 @@ show_completion_certificate() {
             "" \
             "$(gum style --foreground "$ACFS_SUCCESS" --bold '🏆 ACFS Onboarding Complete! 🏆')" \
             "" \
-            "$(gum style --foreground "$ACFS_PINK" "You have successfully completed all 11 lessons")" \
+            "$(gum style --foreground "$ACFS_PINK" "You have successfully completed all $NUM_LESSONS lessons")" \
             "$(gum style --foreground "$ACFS_PINK" "of the Agentic Coding Flywheel Setup tutorial.")" \
             "" \
             "$(gum style --foreground "$ACFS_TEAL" "Skills Mastered:")" \
@@ -966,7 +1018,7 @@ show_completion_certificate() {
         echo ""
         echo -e "${GREEN}${BOLD}         🏆 ACFS Onboarding Complete! 🏆${NC}"
         echo ""
-        echo -e "  You have successfully completed all 11 lessons"
+        echo -e "  You have successfully completed all $NUM_LESSONS lessons"
         echo -e "  of the Agentic Coding Flywheel Setup tutorial."
         echo ""
         echo -e "${CYAN}${BOLD}  Skills Mastered:${NC}"
@@ -1162,7 +1214,7 @@ show_status() {
             --border-foreground "$ACFS_ACCENT" \
             --padding "1 2" \
             --margin "0 0 1 0" \
-            "$(gum style --foreground "$ACFS_PINK" --bold "📊 Progress: $completed_count/11 lessons")
+            "$(gum style --foreground "$ACFS_PINK" --bold "📊 Progress: $completed_count/$NUM_LESSONS lessons")
 
 $(gum style --foreground "$ACFS_PRIMARY" "$bar") $(gum style --foreground "$ACFS_SUCCESS" --bold "$percent%")"
 
@@ -1199,11 +1251,11 @@ $(gum style --foreground "$ACFS_PRIMARY" "$bar") $(gum style --foreground "$ACFS
         echo ""
         gum confirm --affirmative "Continue" --negative "" "Ready to continue?" || true
     else
-        echo -e "${BOLD}Progress: $completed_count/11 lessons completed${NC}"
+        echo -e "${BOLD}Progress: $completed_count/$NUM_LESSONS lessons completed${NC}"
         echo ""
 
-        # Progress bar (45 chars wide for 11 lessons)
-        local filled=$((completed_count * 45 / 11))
+        # Progress bar (width based on lesson count)
+        local filled=$((completed_count * 45 / NUM_LESSONS))
         local empty=$((45 - filled))
         local i
         printf '%s' "${GREEN}"
@@ -1327,7 +1379,7 @@ ACFS Onboarding Tutorial
 
 Usage:
   onboard           Launch interactive menu
-  onboard N         Jump to lesson N (1-11)
+  onboard N         Jump to lesson N (1-$NUM_LESSONS)
   onboard reset     Reset all progress
   onboard status    Show completion status
   onboard --cheatsheet [query]  Show ACFS command cheatsheet
