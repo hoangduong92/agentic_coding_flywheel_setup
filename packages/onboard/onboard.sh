@@ -271,6 +271,8 @@ mark_completed() {
             }
         else
             rm -f -- "$tmp" 2>/dev/null || true
+            exec {lock_fd}>&- 2>/dev/null || true
+            return 0
         fi
 
         # Release lock
@@ -320,6 +322,8 @@ set_current() {
             }
         else
             rm -f -- "$tmp" 2>/dev/null || true
+            exec {lock_fd}>&- 2>/dev/null || true
+            return 0
         fi
 
         # Release lock
