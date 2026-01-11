@@ -381,8 +381,7 @@ test_failopen_invalid_json() {
     section "Test 11: Fail-Open on Invalid JSON"
 
     # Send garbage to DCG's stdin (simulating malformed Claude Code input)
-    local output
-    output=$(echo "not valid json at all" | dcg 2>&1) || true
+    echo "not valid json at all" | dcg >/dev/null 2>&1 || true
 
     # DCG should NOT crash and should NOT block - empty output = allow
     # Non-crash is success; we verify by checking dcg still works after
@@ -400,9 +399,8 @@ test_failopen_invalid_json() {
 test_failopen_empty_input() {
     section "Test 12: Fail-Open on Empty Input"
 
-    # Send empty input to DCG
-    local output
-    output=$(echo "" | dcg 2>&1) || true
+    # Send empty input to DCG - should handle gracefully
+    echo "" | dcg >/dev/null 2>&1 || true
 
     # Verify DCG still works
     local verify
