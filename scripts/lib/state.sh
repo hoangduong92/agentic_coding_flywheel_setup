@@ -285,8 +285,9 @@ state_write_atomic() {
 
     # Write content to temp file
     # Using printf for more reliable output than echo
-    if ! printf '%s\n' "$content" > "$temp_file" 2>/dev/null; then
-        local write_err=$?
+    printf '%s\n' "$content" > "$temp_file" 2>/dev/null
+    local write_err=$?
+    if [[ $write_err -ne 0 ]]; then
         rm -f "$temp_file" 2>/dev/null || true
 
         if [[ ! -w "$target_dir" ]]; then
@@ -310,8 +311,9 @@ state_write_atomic() {
 
     # Atomic rename: on POSIX filesystems, rename() is guaranteed atomic
     # when source and target are on the same filesystem
-    if ! mv -f "$temp_file" "$file_path" 2>/dev/null; then
-        local mv_err=$?
+    mv -f "$temp_file" "$file_path" 2>/dev/null
+    local mv_err=$?
+    if [[ $mv_err -ne 0 ]]; then
         rm -f "$temp_file" 2>/dev/null || true
 
         # Check for permission issues
