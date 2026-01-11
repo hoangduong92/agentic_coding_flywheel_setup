@@ -17,9 +17,34 @@ skip() { echo "[$(date '+%H:%M:%S')] [SKIP] $*"; }
 detail() { [[ "$VERBOSE" == "--verbose" ]] && echo "  -> $*" >&2 || true; }
 
 # ============================================================
-# HOOK SIMULATION
+# DCG TEST CLI INTERFACE
 # ============================================================
+# Note: We use `dcg test` CLI instead of hook simulation for pack tests.
+# The hook mode (stdin JSON) is optimized for sub-ms latency and only
+# checks core packs, while `dcg test` checks all enabled packs.
 
+# Test a command using dcg test CLI
+# Returns: DENIED, ALLOWED, or UNKNOWN
+dcg_test_command() {
+    local command="$1"
+    local output
+    output=$(dcg test "$command" 2>&1) || true
+    detail "dcg test output: $output"
+
+    # dcg test outputs "Result: BLOCKED" or "Result: ALLOWED"
+    if echo "$output" | grep -qi "Result: BLOCKED"; then
+        echo "DENIED"
+        return 0
+    elif echo "$output" | grep -qi "Result: ALLOWED"; then
+        echo "ALLOWED"
+        return 0
+    else
+        echo "UNKNOWN"
+        return 1
+    fi
+}
+
+# Hook simulation for core pack tests (git patterns)
 build_hook_input() {
     local command="$1"
     cat <<EOF
@@ -36,14 +61,12 @@ is_deny_output() {
     echo "$1" | grep -Eqi '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"'
 }
 
-# Simulate how Claude Code invokes the PreToolUse hook
 simulate_hook_call() {
     local command="$1"
     local hook_input
     hook_input=$(build_hook_input "$command")
     detail "Hook input: $hook_input"
 
-    # Call DCG as Claude Code would (stdin JSON, check stdout)
     local hook_output
     local exit_code=0
     hook_output=$(echo "$hook_input" | dcg 2>/dev/null) || exit_code=$?
@@ -51,7 +74,6 @@ simulate_hook_call() {
     detail "Hook output: $hook_output"
     detail "Exit code: $exit_code"
 
-    # Check if command was denied
     if is_deny_output "$hook_output"; then
         echo "DENIED"
         return 0
@@ -121,13 +143,13 @@ test_pack_patterns_flag() {
 }
 
 # ============================================================
-# POSTGRESQL PACK TESTS
+# POSTGRESQL PACK TESTS (using dcg test CLI)
 # ============================================================
 
 test_postgresql_blocks_drop_database() {
     log "Testing PostgreSQL pack blocks: DROP DATABASE"
     local result
-    result=$(simulate_hook_call "psql -c 'DROP DATABASE mydb'")
+    result=$(dcg_test_command "psql -c 'DROP DATABASE mydb'")
     if [[ "$result" == "DENIED" ]]; then
         pass "DROP DATABASE is blocked by postgresql pack"
         return 0
@@ -140,7 +162,7 @@ test_postgresql_blocks_drop_database() {
 test_postgresql_blocks_drop_table() {
     log "Testing PostgreSQL pack blocks: DROP TABLE"
     local result
-    result=$(simulate_hook_call "psql -c 'DROP TABLE users'")
+    result=$(dcg_test_command "psql -c 'DROP TABLE users'")
     if [[ "$result" == "DENIED" ]]; then
         pass "DROP TABLE is blocked by postgresql pack"
         return 0
@@ -153,7 +175,7 @@ test_postgresql_blocks_drop_table() {
 test_postgresql_blocks_truncate() {
     log "Testing PostgreSQL pack blocks: TRUNCATE TABLE"
     local result
-    result=$(simulate_hook_call "psql -c 'TRUNCATE TABLE users'")
+    result=$(dcg_test_command "psql -c 'TRUNCATE TABLE users'")
     if [[ "$result" == "DENIED" ]]; then
         pass "TRUNCATE is blocked by postgresql pack"
         return 0
@@ -166,7 +188,7 @@ test_postgresql_blocks_truncate() {
 test_postgresql_blocks_dropdb() {
     log "Testing PostgreSQL pack blocks: dropdb CLI"
     local result
-    result=$(simulate_hook_call "dropdb mydb")
+    result=$(dcg_test_command "dropdb mydb")
     if [[ "$result" == "DENIED" ]]; then
         pass "dropdb CLI is blocked by postgresql pack"
         return 0
@@ -179,7 +201,7 @@ test_postgresql_blocks_dropdb() {
 test_postgresql_blocks_delete_without_where() {
     log "Testing PostgreSQL pack blocks: DELETE without WHERE"
     local result
-    result=$(simulate_hook_call "psql -c 'DELETE FROM users;'")
+    result=$(dcg_test_command "psql -c 'DELETE FROM users;'")
     if [[ "$result" == "DENIED" ]]; then
         pass "DELETE without WHERE is blocked"
         return 0
@@ -192,7 +214,7 @@ test_postgresql_blocks_delete_without_where() {
 test_postgresql_allows_select() {
     log "Testing PostgreSQL pack allows: SELECT queries"
     local result
-    result=$(simulate_hook_call "psql -c 'SELECT * FROM users'")
+    result=$(dcg_test_command "psql -c 'SELECT * FROM users'")
     if [[ "$result" == "ALLOWED" ]]; then
         pass "SELECT query is allowed"
         return 0
@@ -205,7 +227,7 @@ test_postgresql_allows_select() {
 test_postgresql_allows_delete_with_where() {
     log "Testing PostgreSQL pack allows: DELETE with WHERE"
     local result
-    result=$(simulate_hook_call "psql -c 'DELETE FROM users WHERE id = 1'")
+    result=$(dcg_test_command "psql -c 'DELETE FROM users WHERE id = 1'")
     if [[ "$result" == "ALLOWED" ]]; then
         pass "DELETE with WHERE is allowed"
         return 0
@@ -218,7 +240,7 @@ test_postgresql_allows_delete_with_where() {
 test_postgresql_allows_pg_dump_safe() {
     log "Testing PostgreSQL pack allows: pg_dump (safe)"
     local result
-    result=$(simulate_hook_call "pg_dump mydb > backup.sql")
+    result=$(dcg_test_command "pg_dump mydb > backup.sql")
     if [[ "$result" == "ALLOWED" ]]; then
         pass "pg_dump without --clean is allowed"
         return 0
@@ -231,7 +253,7 @@ test_postgresql_allows_pg_dump_safe() {
 test_postgresql_blocks_pg_dump_clean() {
     log "Testing PostgreSQL pack blocks: pg_dump --clean"
     local result
-    result=$(simulate_hook_call "pg_dump --clean mydb > backup.sql")
+    result=$(dcg_test_command "pg_dump --clean mydb > backup.sql")
     if [[ "$result" == "DENIED" ]]; then
         pass "pg_dump --clean is blocked"
         return 0
@@ -242,13 +264,13 @@ test_postgresql_blocks_pg_dump_clean() {
 }
 
 # ============================================================
-# DOCKER PACK TESTS
+# DOCKER PACK TESTS (using dcg test CLI)
 # ============================================================
 
 test_docker_blocks_system_prune() {
     log "Testing Docker pack blocks: docker system prune"
     local result
-    result=$(simulate_hook_call "docker system prune -a")
+    result=$(dcg_test_command "docker system prune -a")
     if [[ "$result" == "DENIED" ]]; then
         pass "docker system prune is blocked"
         return 0
@@ -261,7 +283,7 @@ test_docker_blocks_system_prune() {
 test_docker_blocks_rm_force() {
     log "Testing Docker pack blocks: docker rm -f"
     local result
-    result=$(simulate_hook_call "docker rm -f mycontainer")
+    result=$(dcg_test_command "docker rm -f mycontainer")
     if [[ "$result" == "DENIED" ]]; then
         pass "docker rm -f is blocked"
         return 0
@@ -274,7 +296,7 @@ test_docker_blocks_rm_force() {
 test_docker_allows_ps() {
     log "Testing Docker pack allows: docker ps"
     local result
-    result=$(simulate_hook_call "docker ps -a")
+    result=$(dcg_test_command "docker ps -a")
     if [[ "$result" == "ALLOWED" ]]; then
         pass "docker ps is allowed"
         return 0
@@ -287,7 +309,7 @@ test_docker_allows_ps() {
 test_docker_allows_images() {
     log "Testing Docker pack allows: docker images"
     local result
-    result=$(simulate_hook_call "docker images")
+    result=$(dcg_test_command "docker images")
     if [[ "$result" == "ALLOWED" ]]; then
         pass "docker images is allowed"
         return 0
@@ -298,13 +320,13 @@ test_docker_allows_images() {
 }
 
 # ============================================================
-# MULTI-PACK INTERACTION TESTS
+# MULTI-PACK INTERACTION TESTS (using dcg test CLI)
 # ============================================================
 
 test_git_pack_still_works_with_other_packs() {
     log "Testing Git pack still works with other packs enabled..."
     local result
-    result=$(simulate_hook_call "git push --force origin main")
+    result=$(dcg_test_command "git push --force origin main")
     if [[ "$result" == "DENIED" ]]; then
         pass "git push --force still blocked with multi-pack config"
         return 0
@@ -318,7 +340,7 @@ test_filesystem_pack_still_works_with_other_packs() {
     log "Testing Filesystem pack still works with other packs enabled..."
     # rm -rf outside tmp should be blocked
     local result
-    result=$(simulate_hook_call "rm -rf /important/data")
+    result=$(dcg_test_command "rm -rf /important/data")
     if [[ "$result" == "DENIED" ]]; then
         pass "rm -rf still blocked with multi-pack config"
         return 0
@@ -331,7 +353,7 @@ test_filesystem_pack_still_works_with_other_packs() {
 test_safe_commands_not_blocked_by_multiple_packs() {
     log "Testing safe commands allowed with multiple packs..."
     local result
-    result=$(simulate_hook_call "git status")
+    result=$(dcg_test_command "git status")
     if [[ "$result" == "ALLOWED" ]]; then
         pass "Safe commands still allowed with multi-pack config"
         return 0
@@ -389,13 +411,13 @@ test_pack_list_contains_expected_categories() {
 }
 
 # ============================================================
-# CASE SENSITIVITY TESTS
+# CASE SENSITIVITY TESTS (using dcg test CLI)
 # ============================================================
 
 test_postgresql_case_insensitive_drop() {
     log "Testing PostgreSQL patterns are case-insensitive: drop database"
     local result
-    result=$(simulate_hook_call "psql -c 'drop database mydb'")
+    result=$(dcg_test_command "psql -c 'drop database mydb'")
     if [[ "$result" == "DENIED" ]]; then
         pass "Lowercase 'drop database' is blocked"
         return 0
@@ -408,7 +430,7 @@ test_postgresql_case_insensitive_drop() {
 test_postgresql_case_insensitive_truncate() {
     log "Testing PostgreSQL patterns are case-insensitive: Truncate"
     local result
-    result=$(simulate_hook_call "psql -c 'Truncate Table users'")
+    result=$(dcg_test_command "psql -c 'Truncate Table users'")
     if [[ "$result" == "DENIED" ]]; then
         pass "Mixed-case 'Truncate Table' is blocked"
         return 0
