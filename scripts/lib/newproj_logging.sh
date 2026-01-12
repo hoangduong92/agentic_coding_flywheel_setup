@@ -213,7 +213,8 @@ log_input() {
 
     # Basic sanitization for common sensitive patterns
     # Mask anything that looks like a token/key/password
-    sanitized=$(echo "$sanitized" | sed -E 's/(sk[-_]|api[-_]?key|token|password|secret)[^[:space:]]*/\1***/gi')
+    # Note: Use 'I' flag for case-insensitive matching in GNU sed (not 'i')
+    sanitized=$(echo "$sanitized" | sed -E 's/(sk[-_]|api[-_]?key|token|password|secret)[^[:space:]]*/\1***/gI')
 
     local timestamp
     timestamp=$(date +"%H:%M:%S.%3N" 2>/dev/null || date +"%H:%M:%S")
