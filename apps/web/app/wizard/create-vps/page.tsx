@@ -67,7 +67,6 @@ const CHECKLIST_ITEMS = [
   { id: "region", label: "Picked a region close to me" },
   { id: "password", label: "Set a root password (or received one via email)" },
   { id: "created", label: "Created the VPS and waited for it to start" },
-  { id: "copied-ip", label: "Copied the IP address" },
 ] as const;
 
 type ChecklistItemId = typeof CHECKLIST_ITEMS[number]["id"];
@@ -315,6 +314,154 @@ export default function CreateVPSPage() {
               </label>
             ))}
           </div>
+
+          {/* Prompt to enter IP when checklist is complete */}
+          {allChecked && (
+            <div className="mt-4 flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary">
+              <Check className="h-4 w-4" />
+              <span>Great! Now enter your VPS IP address below to continue</span>
+            </div>
+          )}
+        </div>
+
+        {/* IP Address input - placed prominently after checklist */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <h2 className="font-semibold text-foreground">Your VPS IP address</h2>
+            <p className="text-sm text-muted-foreground">
+              Enter the IP address of your new VPS. You&apos;ll find this in your
+              provider&apos;s control panel after the VPS is created.
+            </p>
+          </div>
+
+          {/* Privacy assurance card */}
+          <div className="flex gap-3 rounded-xl border border-[oklch(0.72_0.19_145/0.25)] bg-[oklch(0.72_0.19_145/0.05)] p-3 sm:p-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[oklch(0.72_0.19_145/0.15)] sm:h-9 sm:w-9">
+              <ShieldCheck className="h-4 w-4 text-[oklch(0.72_0.19_145)] sm:h-5 sm:w-5" />
+            </div>
+            <div className="min-w-0 space-y-1">
+              <p className="text-[13px] font-medium leading-tight text-[oklch(0.82_0.12_145)] sm:text-sm">
+                Your data stays on your device
+              </p>
+              <p className="text-[12px] leading-relaxed text-muted-foreground sm:text-[13px]">
+                This IP address is stored <strong className="text-foreground/80">only in your browser&apos;s local storage</strong>. It&apos;s
+                never sent to our servers or any third party. The{" "}
+                <a
+                  href="https://github.com/Dicklesworthstone/agentic_coding_flywheel_setup"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-0.5 font-medium text-[oklch(0.75_0.18_195)] hover:underline"
+                >
+                  entire codebase is open source
+                  <ExternalLink className="h-3 w-3" />
+                </a>{" "}
+                so you can verify this yourself.
+              </p>
+            </div>
+          </div>
+
+          <form.Field
+            name="ipAddress"
+            validators={{
+              onChange: ({ value }) => {
+                if (!value) return undefined;
+                if (!isValidIP(value)) {
+                  return "Please enter a valid IP address (e.g., 203.0.113.42)";
+                }
+                return undefined;
+              },
+              onBlur: ({ value }) => {
+                // Duplicate validation on blur for Firefox/Safari compatibility
+                if (!value) return undefined;
+                if (!isValidIP(value)) {
+                  return "Please enter a valid IP address (e.g., 203.0.113.42)";
+                }
+                return undefined;
+              },
+              onSubmit: ({ value }) => {
+                if (!value) {
+                  return "Please enter your VPS IP address";
+                }
+                if (!isValidIP(value)) {
+                  return "Please enter a valid IP address";
+                }
+                return undefined;
+              },
+            }}
+          >
+            {(field) => {
+              const hasErrors = field.state.meta.errors.length > 0;
+              const isValid = field.state.value && !hasErrors && isValidIP(field.state.value);
+              const canSubmit = allChecked && isValid && !isNavigating;
+
+              return (
+                <div className="space-y-2">
+                  <input
+                    data-vps-ip-input
+                    type="text"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    placeholder="e.g., 203.0.113.42"
+                    className={cn(
+                      "w-full rounded-xl border bg-background px-4 py-3 font-mono text-sm outline-none transition-all",
+                      "focus:border-primary focus:ring-2 focus:ring-primary/20",
+                      hasErrors
+                        ? "border-destructive focus:border-destructive focus:ring-destructive/20"
+                        : "border-border/50"
+                    )}
+                  />
+                  {hasErrors && (
+                    <p className="flex items-center gap-1 text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      {field.state.meta.errors[0]}
+                    </p>
+                  )}
+                  {isValid && (
+                    <p className="flex items-center gap-1 text-sm text-[oklch(0.72_0.19_145)]">
+                      <Check className="h-4 w-4" />
+                      Valid IP address
+                    </p>
+                  )}
+
+                  {/* Hint when IP is valid but checklist isn't complete */}
+                  {isValid && !allChecked && (
+                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <AlertCircle className="h-4 w-4" />
+                      Complete the checklist above to continue
+                    </p>
+                  )}
+
+                  {/* Hint when checklist is complete but IP is missing */}
+                  {allChecked && !field.state.value && (
+                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <AlertCircle className="h-4 w-4" />
+                      Enter your VPS IP address above to continue
+                    </p>
+                  )}
+
+                  {/* Hint when checklist is complete but IP is invalid */}
+                  {allChecked && field.state.value && !isValid && !hasErrors && (
+                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <AlertCircle className="h-4 w-4" />
+                      Please enter a valid IP address to continue
+                    </p>
+                  )}
+
+                  {/* Continue button - rendered inside field for access to validation state */}
+                  <div className="flex justify-end pt-6">
+                    <Button
+                      type="submit"
+                      disabled={!canSubmit}
+                      size="lg"
+                    >
+                      {isNavigating ? "Loading..." : "Continue to SSH"}
+                    </Button>
+                  </div>
+                </div>
+              );
+            }}
+          </form.Field>
         </div>
 
         {/* Region selection tip - prominent placement */}
@@ -368,7 +515,7 @@ export default function CreateVPSPage() {
           <div className="space-y-6">
             <GuideExplain term="an IP Address">
               An IP address is like a phone number for computers. It&apos;s a series
-              of numbers (like 192.168.1.100) that identifies your VPS on the internet.
+              of numbers (like 203.0.113.42) that identifies your VPS on the internet.
               <br /><br />
               You&apos;ll need this address to connect to your VPS from your computer.
               It&apos;s like knowing someone&apos;s phone number so you can call them.
@@ -458,17 +605,17 @@ export default function CreateVPSPage() {
                   <ul className="mt-2 list-disc space-y-1 pl-5">
                     <li>On the main server overview page</li>
                     <li>In a &quot;Network&quot; or &quot;IP Addresses&quot; section</li>
-                    <li>It looks like: <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">123.45.67.89</code></li>
+                    <li>It looks like: <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">203.0.113.42</code></li>
                   </ul>
                   <br />
-                  <strong>Copy this number</strong> and paste it in the box below!
+                  <strong>Copy this number</strong> and paste it in the &quot;Your VPS IP address&quot; box above!
                 </GuideStep>
               </div>
             </GuideSection>
 
             <GuideTip>
               The IP address should be 4 groups of numbers separated by periods,
-              like <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">192.168.1.100</code>.
+              like <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">203.0.113.42</code>.
               Don&apos;t include any letters or extra characters!
             </GuideTip>
 
@@ -479,130 +626,6 @@ export default function CreateVPSPage() {
             </GuideCaution>
           </div>
         </SimplerGuide>
-
-        {/* IP Address input */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <h2 className="font-semibold text-foreground">Your VPS IP address</h2>
-            <p className="text-sm text-muted-foreground">
-              Enter the IP address of your new VPS. You&apos;ll find this in your
-              provider&apos;s control panel after the VPS is created.
-            </p>
-          </div>
-
-          {/* Privacy assurance card */}
-          <div className="flex gap-3 rounded-xl border border-[oklch(0.72_0.19_145/0.25)] bg-[oklch(0.72_0.19_145/0.05)] p-3 sm:p-4">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[oklch(0.72_0.19_145/0.15)] sm:h-9 sm:w-9">
-              <ShieldCheck className="h-4 w-4 text-[oklch(0.72_0.19_145)] sm:h-5 sm:w-5" />
-            </div>
-            <div className="min-w-0 space-y-1">
-              <p className="text-[13px] font-medium leading-tight text-[oklch(0.82_0.12_145)] sm:text-sm">
-                Your data stays on your device
-              </p>
-              <p className="text-[12px] leading-relaxed text-muted-foreground sm:text-[13px]">
-                This IP address is stored <strong className="text-foreground/80">only in your browser&apos;s local storage</strong>. It&apos;s
-                never sent to our servers or any third party. The{" "}
-                <a
-                  href="https://github.com/Dicklesworthstone/agentic_coding_flywheel_setup"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-0.5 font-medium text-[oklch(0.75_0.18_195)] hover:underline"
-                >
-                  entire codebase is open source
-                  <ExternalLink className="h-3 w-3" />
-                </a>{" "}
-                so you can verify this yourself.
-              </p>
-            </div>
-          </div>
-
-          <form.Field
-            name="ipAddress"
-            validators={{
-              onChange: ({ value }) => {
-                if (!value) return undefined;
-                if (!isValidIP(value)) {
-                  return "Please enter a valid IP address (e.g., 192.168.1.1)";
-                }
-                return undefined;
-              },
-              onBlur: ({ value }) => {
-                // Duplicate validation on blur for Firefox/Safari compatibility
-                if (!value) return undefined;
-                if (!isValidIP(value)) {
-                  return "Please enter a valid IP address (e.g., 192.168.1.1)";
-                }
-                return undefined;
-              },
-              onSubmit: ({ value }) => {
-                if (!value) {
-                  return "Please enter your VPS IP address";
-                }
-                if (!isValidIP(value)) {
-                  return "Please enter a valid IP address";
-                }
-                return undefined;
-              },
-            }}
-          >
-            {(field) => {
-              const hasErrors = field.state.meta.errors.length > 0;
-              const isValid = field.state.value && !hasErrors && isValidIP(field.state.value);
-              const canSubmit = allChecked && isValid && !isNavigating;
-
-              return (
-                <div className="space-y-2">
-                  <input
-                    data-vps-ip-input
-                    type="text"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    placeholder="e.g., 192.168.1.100"
-                    className={cn(
-                      "w-full rounded-xl border bg-background px-4 py-3 font-mono text-sm outline-none transition-all",
-                      "focus:border-primary focus:ring-2 focus:ring-primary/20",
-                      hasErrors
-                        ? "border-destructive focus:border-destructive focus:ring-destructive/20"
-                        : "border-border/50"
-                    )}
-                  />
-                  {hasErrors && (
-                    <p className="flex items-center gap-1 text-sm text-destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      {field.state.meta.errors[0]}
-                    </p>
-                  )}
-                  {isValid && (
-                    <p className="flex items-center gap-1 text-sm text-[oklch(0.72_0.19_145)]">
-                      <Check className="h-4 w-4" />
-                      Valid IP address
-                    </p>
-                  )}
-
-                  {/* Hint when IP is valid but checklist isn't complete */}
-                  {isValid && !allChecked && (
-                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <AlertCircle className="h-4 w-4" />
-                      Complete the checklist above to continue
-                    </p>
-                  )}
-
-                  {/* Continue button - rendered inside field for access to validation state */}
-                  <div className="flex justify-end pt-6">
-                    <Button
-                      type="submit"
-                      disabled={!canSubmit}
-                      size="lg"
-                    >
-                      {isNavigating ? "Loading..." : "Continue to SSH"}
-                    </Button>
-                  </div>
-                </div>
-              );
-            }}
-          </form.Field>
-        </div>
       </form>
     </div>
   );
