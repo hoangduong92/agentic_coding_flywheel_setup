@@ -1054,6 +1054,8 @@ verify_all_installers_json() {
         str="${str//$'\t'/\\t}"
         str="${str//$'\r'/\\r}"
         str="${str//$'\n'/\\n}"
+        str="${str//$'\b'/\\b}"
+        str="${str//$'\f'/\\f}"
         echo -n "$str"
     }
 
