@@ -13,7 +13,7 @@ AI agents like Claude Code are powerful, but they don't know your specific proje
 
 **Skills** are reusable prompt templates that give agents new capabilities. They are like "plugins" for your AI.
 
-We use **meta_skill (ms)** to manage these skills locally. It's a "local-first" tool, meaning your skills live in your project repo, not in the cloud.
+We use **meta_skill (ms)** to manage these skills locally. It's a local-first knowledge management tool with hybrid semantic search (BM25 + hash embeddings) and Git-backed audit trails. Your skills live in your project repo, not in the cloud.
 
 ---
 

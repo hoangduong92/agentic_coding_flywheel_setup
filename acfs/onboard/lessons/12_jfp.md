@@ -11,9 +11,9 @@ skills:
 
 In Lesson 11, you learned how `ms` manages skills locally. But where do good skills come from?
 
-**JFP (JeffreysPrompts.com CLI)** gives you access to a curated library of battle-tested prompts for AI coding agents. Think of it as a package manager for prompts.
+**JFP (JeffreysPrompts.com CLI)** gives you access to a curated library of battle-tested prompts for Claude, GPT, and other AI coding agents. The CLI and website share the same prompt library.
 
-You can browse, copy, and install prompts directly as Claude Code skills.
+Prompts are organized into bundles and workflows. You can browse, copy to clipboard, or install directly as Claude Code skills.
 
 ---
 

@@ -34,12 +34,12 @@ export function JfpLesson() {
       <Section title="What Is JFP?" icon={<GraduationCap className="h-5 w-5" />} delay={0.1}>
         <Paragraph>
           <Highlight>JFP (JeffreysPrompts.com CLI)</Highlight> gives you access to a curated
-          collection of battle-tested prompts for AI coding agents. Browse, copy, and install
-          prompts as Claude Code skills.
+          library of battle-tested prompts for Claude, GPT, and other AI coding agents. Browse,
+          copy, and install prompts directly as Claude Code skills.
         </Paragraph>
         <Paragraph>
-          Think of it as a package manager for prompts - find the perfect prompt for your task
-          and install it with one command.
+          The CLI and website share the same prompt library—use whichever interface fits your
+          workflow. Prompts are organized into bundles and workflows for complex use cases.
         </Paragraph>
 
         <div className="mt-8">

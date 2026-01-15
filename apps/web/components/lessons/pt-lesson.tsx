@@ -33,13 +33,13 @@ export function PtLesson() {
       {/* Section 1: What Is PT */}
       <Section title="What Is Process Triage?" icon={<Activity className="h-5 w-5" />} delay={0.1}>
         <Paragraph>
-          <Highlight>PT (Process Triage)</Highlight> helps you find, analyze, and manage
-          system processes intelligently. When something is eating CPU or memory, PT helps
-          you identify and handle it.
+          <Highlight>PT (Process Triage)</Highlight> identifies and terminates abandoned or
+          zombie processes using a Bayesian-inspired scoring algorithm. It evaluates process type,
+          age, orphan status, and resource usage to calculate abandonment probability.
         </Paragraph>
         <Paragraph>
-          Unlike basic tools like top or htop, PT provides context-aware process information
-          and smart suggestions for handling problematic processes.
+          PT remembers your kill/spare decisions for similar processes, improving recommendations
+          over time. It requires explicit confirmation and attempts graceful SIGTERM first.
         </Paragraph>
 
         <div className="mt-8">

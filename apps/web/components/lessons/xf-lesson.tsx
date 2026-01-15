@@ -33,14 +33,13 @@ export function XfLesson() {
       {/* Section 1: What Is XF */}
       <Section title="What Is XF?" icon={<Archive className="h-5 w-5" />} delay={0.1}>
         <Paragraph>
-          <Highlight>XF</Highlight> is an ultra-fast search tool for X/Twitter data archives.
-          Built with Tantivy (Rust&apos;s answer to Lucene), it delivers sub-millisecond query
-          times even on large archives.
+          <Highlight>XF</Highlight> provides blazingly fast full-text search across your personal
+          X/Twitter archive—tweets, likes, DMs, and Grok conversations. Built with Tantivy, it
+          delivers sub-millisecond queries with hybrid BM25 and semantic search.
         </Paragraph>
         <Paragraph>
-          If you&apos;ve downloaded your Twitter archive, xf lets you search through years of
-          tweets instantly. Great for finding old conversations, references, or building
-          datasets.
+          All indexing happens locally on your machine. No data leaves your system. Index once
+          at ~10,000 docs/second, then search instantly across years of content.
         </Paragraph>
 
         <div className="mt-8">

@@ -33,13 +33,13 @@ export function AprLesson() {
       {/* Section 1: What Is APR */}
       <Section title="What Is APR?" icon={<RefreshCw className="h-5 w-5" />} delay={0.1}>
         <Paragraph>
-          <Highlight>APR (Automated Plan Reviser Pro)</Highlight> refines and improves your
-          implementation plans using AI. Feed it a rough plan and get back a polished,
-          actionable roadmap.
+          <Highlight>APR (Automated Plan Reviser Pro)</Highlight> automates iterative specification
+          refinement using extended AI reasoning. Instead of manually running 15-20 review rounds,
+          APR orchestrates the process automatically.
         </Paragraph>
         <Paragraph>
-          Perfect for taking initial ideas from agents and turning them into well-structured
-          plans with clear steps, dependencies, and considerations.
+          Early rounds fix architectural issues, middle rounds refine structure, later rounds
+          polish abstractions—similar to numerical optimization settling into a minimum.
         </Paragraph>
 
         <div className="mt-8">

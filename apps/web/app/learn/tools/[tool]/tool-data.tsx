@@ -202,7 +202,7 @@ export const TOOLS: Record<ToolId, ToolCard> = {
   ms: {
     id: "ms",
     title: "Meta Skill",
-    tagline: "Local-first skill management for agents - install and manage Claude Code skills",
+    tagline: "Local-first knowledge management with hybrid semantic search and Git-backed audit trails",
     icon: <GraduationCap className="h-8 w-8" aria-hidden="true" />,
     gradient: "from-purple-500/20 via-violet-500/20 to-purple-500/20",
     glowColor: "rgba(139,92,246,0.4)",
@@ -214,7 +214,7 @@ export const TOOLS: Record<ToolId, ToolCard> = {
   apr: {
     id: "apr",
     title: "Automated Plan Reviser",
-    tagline: "AI-powered plan revision - refine and improve implementation plans",
+    tagline: "Automated iterative spec refinement - 15+ AI review rounds without manual copy-paste",
     icon: <Wrench className="h-8 w-8" aria-hidden="true" />,
     gradient: "from-teal-500/20 via-cyan-500/20 to-teal-500/20",
     glowColor: "rgba(45,212,191,0.4)",
@@ -226,7 +226,7 @@ export const TOOLS: Record<ToolId, ToolCard> = {
   jfp: {
     id: "jfp",
     title: "JeffreysPrompts",
-    tagline: "Curated prompts for agentic coding - browse, copy, install as skills",
+    tagline: "Battle-tested prompt library for AI agents - browse, copy, install as Claude Code skills",
     icon: <GraduationCap className="h-8 w-8" aria-hidden="true" />,
     gradient: "from-amber-500/20 via-yellow-500/20 to-amber-500/20",
     glowColor: "rgba(245,158,11,0.4)",
@@ -238,7 +238,7 @@ export const TOOLS: Record<ToolId, ToolCard> = {
   pt: {
     id: "pt",
     title: "Process Triage",
-    tagline: "Intelligent process management - find and manage system processes",
+    tagline: "Find and kill stuck/zombie processes with Bayesian scoring and decision memory",
     icon: <Wrench className="h-8 w-8" aria-hidden="true" />,
     gradient: "from-lime-500/20 via-green-500/20 to-lime-500/20",
     glowColor: "rgba(132,204,22,0.4)",
@@ -250,7 +250,7 @@ export const TOOLS: Record<ToolId, ToolCard> = {
   xf: {
     id: "xf",
     title: "X Archive Search",
-    tagline: "Ultra-fast X/Twitter archive search with sub-millisecond queries",
+    tagline: "Blazingly fast local search across your X/Twitter archive - tweets, DMs, likes, and Grok chats",
     icon: <Search className="h-8 w-8" aria-hidden="true" />,
     gradient: "from-slate-500/20 via-gray-500/20 to-slate-500/20",
     glowColor: "rgba(148,163,184,0.4)",

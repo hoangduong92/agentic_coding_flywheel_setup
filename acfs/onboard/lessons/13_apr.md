@@ -9,9 +9,9 @@ skills:
 
 # What is APR?
 
-When Claude Code generates an implementation plan, it's often a good starting point. But what if you want a more thorough, polished roadmap?
+Complex specifications require multiple review cycles to identify architectural issues, edge cases, and security flaws. Instead of manually running 15-20 AI review rounds, APR automates the process.
 
-**APR (Automated Plan Reviser Pro)** takes rough plans and refines them using AI. It adds structure, identifies dependencies, surfaces edge cases, and produces actionable roadmaps.
+**APR (Automated Plan Reviser Pro)** orchestrates iterative specification refinement using extended AI reasoning. Early rounds fix major issues, middle rounds refine structure, later rounds polish abstractions.
 
 ---
 

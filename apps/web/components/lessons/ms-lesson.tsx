@@ -34,12 +34,14 @@ export function MsLesson() {
       {/* Section 1: What Is Meta Skill */}
       <Section title="What Is Meta Skill?" icon={<GraduationCap className="h-5 w-5" />} delay={0.1}>
         <Paragraph>
-          <Highlight>Meta Skill (ms)</Highlight> is your local skill manager for AI coding agents.
-          Install, manage, and organize Claude Code skills without relying on external services.
+          <Highlight>Meta Skill (ms)</Highlight> is a local-first knowledge management platform that
+          turns operational knowledge into structured, searchable, reusable artifacts with Git-backed
+          audit trails.
         </Paragraph>
         <Paragraph>
-          Skills are reusable prompts that extend your agent&apos;s capabilities. With ms, you can
-          install skills from JeffreysPrompts.com or create your own, all stored locally.
+          It combines BM25 lexical matching with deterministic hash embeddings for hybrid semantic
+          search—no external APIs required. Skills can come from hand-written files, CASS session
+          mining, or bundle imports.
         </Paragraph>
 
         <div className="mt-8">

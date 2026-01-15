@@ -254,7 +254,7 @@ install_stack_mcp_agent_mail() {
     log_success "stack.mcp_agent_mail installed"
 }
 
-# Local-first skill management for agents (ms)
+# Local-first knowledge management with hybrid semantic search (ms)
 install_stack_meta_skill() {
     local module_id="stack.meta_skill"
     acfs_require_contract "module:${module_id}" || return 1
@@ -342,7 +342,7 @@ INSTALL_STACK_META_SKILL
     log_success "stack.meta_skill installed"
 }
 
-# APR - AI-powered plan revision and refinement (apr)
+# Automated iterative spec refinement with extended AI reasoning (apr)
 install_stack_automated_plan_reviser() {
     local module_id="stack.automated_plan_reviser"
     acfs_require_contract "module:${module_id}" || return 1
@@ -440,25 +440,27 @@ INSTALL_STACK_AUTOMATED_PLAN_REVISER
     log_success "stack.automated_plan_reviser installed"
 }
 
-# JeffreysPrompts.com CLI - curated prompts for agentic coding (jfp)
+# Curated battle-tested prompts for AI agents - browse and install as skills (jfp)
 install_stack_jeffreysprompts() {
     local module_id="stack.jeffreysprompts"
     acfs_require_contract "module:${module_id}" || return 1
     log_step "Installing stack.jeffreysprompts"
 
     if [[ "${DRY_RUN:-false}" = "true" ]]; then
-        log_info "dry-run: install: cd /data/projects/jeffreysprompts.com 2>/dev/null || git clone https://github.com/Dicklesworthstone/jeffreysprompts.com.git /data/projects/jeffreysprompts.com (target_user)"
+        log_info "dry-run: install: JFP_DIR=\"\${HOME}/.local/share/jeffreysprompts.com\" (target_user)"
     else
         if ! run_as_target_shell <<'INSTALL_STACK_JEFFREYSPROMPTS'
-cd /data/projects/jeffreysprompts.com 2>/dev/null || git clone https://github.com/Dicklesworthstone/jeffreysprompts.com.git /data/projects/jeffreysprompts.com
-cd /data/projects/jeffreysprompts.com && bun install && bun run build:cli
-cp /data/projects/jeffreysprompts.com/jfp ~/.local/bin/jfp
+JFP_DIR="${HOME}/.local/share/jeffreysprompts.com"
+mkdir -p "${HOME}/.local/share"
+cd "$JFP_DIR" 2>/dev/null || git clone https://github.com/Dicklesworthstone/jeffreysprompts.com.git "$JFP_DIR"
+cd "$JFP_DIR" && bun install && bun run build:cli
+cp "$JFP_DIR/jfp" ~/.local/bin/jfp
 chmod +x ~/.local/bin/jfp
 INSTALL_STACK_JEFFREYSPROMPTS
         then
-            log_warn "stack.jeffreysprompts: install command failed: cd /data/projects/jeffreysprompts.com 2>/dev/null || git clone https://github.com/Dicklesworthstone/jeffreysprompts.com.git /data/projects/jeffreysprompts.com"
+            log_warn "stack.jeffreysprompts: install command failed: JFP_DIR=\"\${HOME}/.local/share/jeffreysprompts.com\""
             if type -t record_skipped_tool >/dev/null 2>&1; then
-              record_skipped_tool "stack.jeffreysprompts" "install command failed: cd /data/projects/jeffreysprompts.com 2>/dev/null || git clone https://github.com/Dicklesworthstone/jeffreysprompts.com.git /data/projects/jeffreysprompts.com"
+              record_skipped_tool "stack.jeffreysprompts" "install command failed: JFP_DIR=\"\${HOME}/.local/share/jeffreysprompts.com\""
             elif type -t state_tool_skip >/dev/null 2>&1; then
               state_tool_skip "stack.jeffreysprompts"
             fi
@@ -497,7 +499,7 @@ INSTALL_STACK_JEFFREYSPROMPTS
     log_success "stack.jeffreysprompts installed"
 }
 
-# Process Triage - intelligent process management (pt)
+# Find and terminate stuck/zombie processes with intelligent scoring (pt)
 install_stack_process_triage() {
     local module_id="stack.process_triage"
     acfs_require_contract "module:${module_id}" || return 1
@@ -1016,10 +1018,12 @@ install_stack_slb() {
     else
         if ! run_as_target_shell <<'INSTALL_STACK_SLB'
 mkdir -p ~/go/bin
-cd /tmp && rm -rf slb_build
-git clone --depth 1 https://github.com/Dicklesworthstone/simultaneous_launch_button.git slb_build
-cd slb_build && go build -o ~/go/bin/slb ./cmd/slb
-rm -rf /tmp/slb_build
+SLB_TMP="$(mktemp -d "${TMPDIR:-/tmp}/slb_build.XXXXXX")"
+cd "$SLB_TMP"
+git clone --depth 1 https://github.com/Dicklesworthstone/simultaneous_launch_button.git .
+go build -o ~/go/bin/slb ./cmd/slb
+cd ..
+rm -rf "$SLB_TMP"
 # Add ~/go/bin to PATH if not already present
 if ! grep -q 'export PATH=.*\$HOME/go/bin' ~/.zshrc 2>/dev/null; then
   echo '' >> ~/.zshrc

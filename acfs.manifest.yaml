@@ -970,7 +970,7 @@ modules:
       - "Server accessible at http://127.0.0.1:8765 after install"
 
   - id: stack.meta_skill
-    description: Local-first skill management for agents (ms)
+    description: Local-first knowledge management with hybrid semantic search (ms)
     category: stack
     phase: 9
     run_as: target_user
@@ -993,7 +993,7 @@ modules:
       - ms doctor --json || true
 
   - id: stack.automated_plan_reviser
-    description: APR - AI-powered plan revision and refinement (apr)
+    description: Automated iterative spec refinement with extended AI reasoning (apr)
     category: stack
     phase: 9
     run_as: target_user
@@ -1015,7 +1015,7 @@ modules:
       - apr --version || true
 
   - id: stack.jeffreysprompts
-    description: JeffreysPrompts.com CLI - curated prompts for agentic coding (jfp)
+    description: Curated battle-tested prompts for AI agents - browse and install as skills (jfp)
     category: stack
     phase: 9
     run_as: target_user
@@ -1029,16 +1029,18 @@ modules:
       command: "command -v jfp"
     install:
       - |
-          cd /data/projects/jeffreysprompts.com 2>/dev/null || git clone https://github.com/Dicklesworthstone/jeffreysprompts.com.git /data/projects/jeffreysprompts.com
-          cd /data/projects/jeffreysprompts.com && bun install && bun run build:cli
-          cp /data/projects/jeffreysprompts.com/jfp ~/.local/bin/jfp
+          JFP_DIR="${HOME}/.local/share/jeffreysprompts.com"
+          mkdir -p "${HOME}/.local/share"
+          cd "$JFP_DIR" 2>/dev/null || git clone https://github.com/Dicklesworthstone/jeffreysprompts.com.git "$JFP_DIR"
+          cd "$JFP_DIR" && bun install && bun run build:cli
+          cp "$JFP_DIR/jfp" ~/.local/bin/jfp
           chmod +x ~/.local/bin/jfp
     verify:
       - jfp --help
       - jfp status || true
 
   - id: stack.process_triage
-    description: Process Triage - intelligent process management (pt)
+    description: Find and terminate stuck/zombie processes with intelligent scoring (pt)
     category: stack
     phase: 9
     run_as: target_user
@@ -1185,10 +1187,12 @@ modules:
       # Build from source instead:
       - |
         mkdir -p ~/go/bin
-        cd /tmp && rm -rf slb_build
-        git clone --depth 1 https://github.com/Dicklesworthstone/simultaneous_launch_button.git slb_build
-        cd slb_build && go build -o ~/go/bin/slb ./cmd/slb
-        rm -rf /tmp/slb_build
+        SLB_TMP="$(mktemp -d "${TMPDIR:-/tmp}/slb_build.XXXXXX")"
+        cd "$SLB_TMP"
+        git clone --depth 1 https://github.com/Dicklesworthstone/simultaneous_launch_button.git .
+        go build -o ~/go/bin/slb ./cmd/slb
+        cd ..
+        rm -rf "$SLB_TMP"
         # Add ~/go/bin to PATH if not already present
         if ! grep -q 'export PATH=.*\$HOME/go/bin' ~/.zshrc 2>/dev/null; then
           echo '' >> ~/.zshrc
