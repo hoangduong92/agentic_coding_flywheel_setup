@@ -2633,7 +2633,7 @@ EOF
     current_shell=$(getent passwd "$TARGET_USER" | cut -d: -f7)
     if [[ "$current_shell" != *"zsh"* ]]; then
         log_detail "Setting zsh as default shell for $TARGET_USER"
-        try_step "Setting zsh as default shell" $SUDO chsh -s "$(which zsh)" "$TARGET_USER" || true
+        try_step "Setting zsh as default shell" $SUDO chsh -s "$(command -v zsh)" "$TARGET_USER" || true
     fi
 
     log_success "Shell setup complete"

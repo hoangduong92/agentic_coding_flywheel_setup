@@ -199,13 +199,13 @@ install_apt_cli_tools() {
     # Handle bat/batcat naming issue (Ubuntu calls it batcat)
     if ! _cli_command_exists bat && _cli_command_exists batcat; then
         log_detail "Creating bat symlink for batcat..."
-        $sudo_cmd ln -sf "$(which batcat)" /usr/local/bin/bat 2>/dev/null || true
+        $sudo_cmd ln -sf "$(command -v batcat)" /usr/local/bin/bat 2>/dev/null || true
     fi
 
     # Handle fd-find naming issue (Ubuntu calls it fdfind)
     if ! _cli_command_exists fd && _cli_command_exists fdfind; then
         log_detail "Creating fd symlink for fdfind..."
-        $sudo_cmd ln -sf "$(which fdfind)" /usr/local/bin/fd 2>/dev/null || true
+        $sudo_cmd ln -sf "$(command -v fdfind)" /usr/local/bin/fd 2>/dev/null || true
     fi
 
     log_success "APT CLI tools installed"
@@ -352,8 +352,16 @@ install_lazygit() {
         return 1
     }
 
-    tar -xzf "$tmpdir/lazygit.tar.gz" -C "$tmpdir"
-    $sudo_cmd install "$tmpdir/lazygit" /usr/local/bin/lazygit
+    tar -xzf "$tmpdir/lazygit.tar.gz" -C "$tmpdir" || {
+        log_warn "Failed to extract lazygit tarball"
+        rm -rf -- "$tmpdir"
+        return 1
+    }
+    $sudo_cmd install "$tmpdir/lazygit" /usr/local/bin/lazygit || {
+        log_warn "Failed to install lazygit"
+        rm -rf -- "$tmpdir"
+        return 1
+    }
     rm -rf -- "$tmpdir"
 
     log_success "lazygit installed from GitHub"
@@ -397,8 +405,16 @@ install_lazydocker() {
         return 1
     }
 
-    tar -xzf "$tmpdir/lazydocker.tar.gz" -C "$tmpdir"
-    $sudo_cmd install "$tmpdir/lazydocker" /usr/local/bin/lazydocker
+    tar -xzf "$tmpdir/lazydocker.tar.gz" -C "$tmpdir" || {
+        log_warn "Failed to extract lazydocker tarball"
+        rm -rf -- "$tmpdir"
+        return 1
+    }
+    $sudo_cmd install "$tmpdir/lazydocker" /usr/local/bin/lazydocker || {
+        log_warn "Failed to install lazydocker"
+        rm -rf -- "$tmpdir"
+        return 1
+    }
     rm -rf -- "$tmpdir"
 
     log_success "lazydocker installed from GitHub"
@@ -442,8 +458,16 @@ install_yq() {
         return 1
     }
 
-    chmod +x "$tmpdir/yq"
-    $sudo_cmd install "$tmpdir/yq" /usr/local/bin/yq
+    chmod +x "$tmpdir/yq" || {
+        log_warn "Failed to make yq executable"
+        rm -rf -- "$tmpdir"
+        return 1
+    }
+    $sudo_cmd install "$tmpdir/yq" /usr/local/bin/yq || {
+        log_warn "Failed to install yq"
+        rm -rf -- "$tmpdir"
+        return 1
+    }
     rm -rf -- "$tmpdir"
 
     log_success "yq installed from GitHub"
