@@ -796,7 +796,7 @@ export const flywheelTools: FlywheelTool[] = [
     shortName: "MS",
     href: "https://github.com/Dicklesworthstone/meta_skill",
     icon: "Sparkles",
-    color: "from-teal-400 to-emerald-500",
+    color: "from-teal-500 to-emerald-600",
     tagline: "Complete skill management platform",
     description:
       "Store skills, search them, track effectiveness, package for sharing, and integrate with AI agents via MCP server. Skills come from hand-written files, CASS mining, bundles, or guided workflows.",
@@ -835,7 +835,7 @@ export const flywheelTools: FlywheelTool[] = [
 
 export const flywheelDescription = {
   title: "The Agentic Coding Flywheel",
-  subtitle: "Ten tools plus utilities that create unheard-of velocity",
+  subtitle: "Eleven tools plus utilities that create unheard-of velocity",
   description:
     "A self-reinforcing system that enables multiple AI agents to work in parallel across 10+ projects, reviewing each other's work, creating and executing tasks, and making incredible autonomous progress while you're away.",
   philosophy: [
