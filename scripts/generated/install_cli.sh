@@ -200,28 +200,6 @@ INSTALL_CLI_MODERN
             return 1
         fi
     fi
-    if [[ "${DRY_RUN:-false}" = "true" ]]; then
-        log_info "dry-run: install: apt-get install -y lazygit || true (root)"
-    else
-        if ! run_as_root_shell <<'INSTALL_CLI_MODERN'
-apt-get install -y lazygit || true
-INSTALL_CLI_MODERN
-        then
-            log_error "cli.modern: install command failed: apt-get install -y lazygit || true"
-            return 1
-        fi
-    fi
-    if [[ "${DRY_RUN:-false}" = "true" ]]; then
-        log_info "dry-run: install: apt-get install -y lazydocker || true (root)"
-    else
-        if ! run_as_root_shell <<'INSTALL_CLI_MODERN'
-apt-get install -y lazydocker || true
-INSTALL_CLI_MODERN
-        then
-            log_error "cli.modern: install command failed: apt-get install -y lazydocker || true"
-            return 1
-        fi
-    fi
 
     # Verify
     if [[ "${DRY_RUN:-false}" = "true" ]]; then

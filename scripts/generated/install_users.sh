@@ -115,13 +115,13 @@ INSTALL_USERS_UBUNTU
         fi
     fi
     if [[ "${DRY_RUN:-false}" = "true" ]]; then
-        log_info "dry-run: verify: sudo -n true (root)"
+        log_info "dry-run: verify: [[ \"\${MODE:-vibe}\" != \"vibe\" ]] || sudo -n true (root)"
     else
         if ! run_as_root_shell <<'INSTALL_USERS_UBUNTU'
-sudo -n true
+[[ "${MODE:-vibe}" != "vibe" ]] || sudo -n true
 INSTALL_USERS_UBUNTU
         then
-            log_error "users.ubuntu: verify failed: sudo -n true"
+            log_error "users.ubuntu: verify failed: [[ \"\${MODE:-vibe}\" != \"vibe\" ]] || sudo -n true"
             return 1
         fi
     fi

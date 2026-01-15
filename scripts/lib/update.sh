@@ -145,7 +145,10 @@ get_version() {
         vercel)
             version=$(vercel --version 2>/dev/null || echo "unknown")
             ;;
-        ntm|ubs|bv|cass|cm|caam|slb|ru|dcg)
+        ntm|ubs|bv|cass|cm|caam|slb|ru|dcg|apr|pt|xf|jfp|ms)
+            version=$("$tool" --version 2>/dev/null | head -1 || echo "unknown")
+            ;;
+        sg|lsd|dust|tldr)
             version=$("$tool" --version 2>/dev/null | head -1 || echo "unknown")
             ;;
         atuin)
@@ -1154,6 +1157,34 @@ update_stack() {
         run_cmd "Meta Skill" update_run_verified_installer ms --easy-mode
     fi
 
+    # APR (Automated Plan Reviser Pro)
+    if cmd_exists apr; then
+        run_cmd "APR" update_run_verified_installer apr --easy-mode
+    fi
+
+    # Process Triage (pt)
+    if cmd_exists pt; then
+        run_cmd "Process Triage" update_run_verified_installer pt
+    fi
+
+    # xf (X Archive Search)
+    if cmd_exists xf; then
+        run_cmd "xf" update_run_verified_installer xf --easy-mode
+    fi
+
+    # JeffreysPrompts (jfp) - built from source, update via git pull + rebuild
+    if cmd_exists jfp; then
+        local jfp_dir="/data/projects/jeffreysprompts.com"
+        if [[ -d "$jfp_dir/.git" ]]; then
+            run_cmd "JeffreysPrompts (git)" git -C "$jfp_dir" pull --ff-only
+            if [[ $? -eq 0 ]] && cmd_exists bun; then
+                run_cmd "JeffreysPrompts (build)" bash -c "cd $jfp_dir && bun install && bun run build:cli && cp jfp ~/.local/bin/jfp"
+            fi
+        else
+            log_item "skip" "JeffreysPrompts" "source directory not found"
+        fi
+    fi
+
     # UBS
     if cmd_exists ubs; then
         run_cmd "Ultimate Bug Scanner" update_run_verified_installer ubs --easy-mode
@@ -1773,4 +1804,6 @@ main() {
     exit 0
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

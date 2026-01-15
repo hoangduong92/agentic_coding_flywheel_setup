@@ -99,9 +99,9 @@ source "$ACFS_GENERATED_SCRIPT_DIR/install_users.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_filesystem.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_shell.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_cli.sh"
+source "$ACFS_GENERATED_SCRIPT_DIR/install_tools.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_network.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_lang.sh"
-source "$ACFS_GENERATED_SCRIPT_DIR/install_tools.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_agents.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_db.sh"
 source "$ACFS_GENERATED_SCRIPT_DIR/install_cloud.sh"
@@ -123,6 +123,9 @@ install_all() {
     install_shell_omz
     log_section "Category: cli"
     install_cli_modern
+    log_section "Category: tools"
+    install_tools_lazygit
+    install_tools_lazydocker
     log_section "Category: network"
     install_network_tailscale
     install_network_ssh_keepalive
@@ -152,6 +155,9 @@ install_all() {
     install_stack_ntm
     install_stack_mcp_agent_mail
     install_stack_meta_skill
+    install_stack_automated_plan_reviser
+    install_stack_jeffreysprompts
+    install_stack_process_triage
     install_stack_ultimate_bug_scanner
     install_stack_beads_viewer
     install_stack_cass
@@ -163,6 +169,7 @@ install_all() {
     log_section "Category: tools"
     install_utils_giil
     install_utils_csctf
+    install_utils_xf
     log_section "Category: acfs"
     install_acfs_workspace
     install_acfs_onboard

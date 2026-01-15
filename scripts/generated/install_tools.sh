@@ -93,7 +93,111 @@ acfs_security_init() {
 }
 
 # Category: tools
-# Modules: 6
+# Modules: 9
+
+# Lazygit (apt or binary fallback)
+install_tools_lazygit() {
+    local module_id="tools.lazygit"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing tools.lazygit"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: install: if apt-get install -y lazygit; then (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_TOOLS_LAZYGIT'
+if apt-get install -y lazygit; then
+  exit 0
+fi
+# Fallback to binary install
+LG_VER="0.44.1"
+ARCH=$(uname -m)
+case "$ARCH" in
+  x86_64) LG_SHA="84682f4ad5a449d0a3ffbc8332200fe8651aee9dd91dcd8d87197ba6c2450dbc" ;;
+  aarch64) LG_SHA="26a435f47b691325c086dad2f84daa6556df5af8efc52b6ed624fa657605c976" ;;
+  *) echo "Unsupported arch for lazygit binary: $ARCH"; exit 0 ;;
+esac
+
+LG_URL="https://github.com/jesseduffield/lazygit/releases/download/v${LG_VER}/lazygit_${LG_VER}_Linux_${ARCH}.tar.gz"
+TMP_FILE="$(mktemp)"
+
+curl -fsSL "$LG_URL" -o "$TMP_FILE"
+echo "$LG_SHA $TMP_FILE" | sha256sum -c - || { echo "Checksum failed"; rm "$TMP_FILE"; exit 1; }
+
+tar -xzf "$TMP_FILE" -C /usr/local/bin lazygit
+chmod +x /usr/local/bin/lazygit
+rm "$TMP_FILE"
+INSTALL_TOOLS_LAZYGIT
+        then
+            log_error "tools.lazygit: install command failed: if apt-get install -y lazygit; then"
+            return 1
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: lazygit --version (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_TOOLS_LAZYGIT'
+lazygit --version
+INSTALL_TOOLS_LAZYGIT
+        then
+            log_error "tools.lazygit: verify failed: lazygit --version"
+            return 1
+        fi
+    fi
+
+    log_success "tools.lazygit installed"
+}
+
+# Lazydocker (binary install)
+install_tools_lazydocker() {
+    local module_id="tools.lazydocker"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing tools.lazydocker"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: install: LD_VER=\"0.23.3\" (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_TOOLS_LAZYDOCKER'
+LD_VER="0.23.3"
+ARCH=$(uname -m)
+case "$ARCH" in
+  x86_64) LD_SHA="1f3c7037326973b85cb85447b2574595103185f8ed067b605dd43cc201bc8786" ;;
+  aarch64) LD_SHA="ae7bed0309289396d396b8502b2d78d153a4f8ce8add042f655332241e7eac31" ;;
+  *) echo "Unsupported arch for lazydocker binary: $ARCH"; exit 0 ;;
+esac
+
+LD_URL="https://github.com/jesseduffield/lazydocker/releases/download/v${LD_VER}/lazydocker_${LD_VER}_Linux_${ARCH}.tar.gz"
+TMP_FILE="$(mktemp)"
+
+curl -fsSL "$LD_URL" -o "$TMP_FILE"
+echo "$LD_SHA $TMP_FILE" | sha256sum -c - || { echo "Checksum failed"; rm "$TMP_FILE"; exit 1; }
+
+tar -xzf "$TMP_FILE" -C /usr/local/bin lazydocker
+chmod +x /usr/local/bin/lazydocker
+rm "$TMP_FILE"
+INSTALL_TOOLS_LAZYDOCKER
+        then
+            log_error "tools.lazydocker: install command failed: LD_VER=\"0.23.3\""
+            return 1
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: lazydocker --version (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_TOOLS_LAZYDOCKER'
+lazydocker --version
+INSTALL_TOOLS_LAZYDOCKER
+        then
+            log_error "tools.lazydocker: verify failed: lazydocker --version"
+            return 1
+        fi
+    fi
+
+    log_success "tools.lazydocker installed"
+}
 
 # Atuin shell history (Ctrl-R superpowers)
 install_tools_atuin() {
@@ -524,15 +628,106 @@ INSTALL_UTILS_CSCTF
     log_success "utils.csctf installed"
 }
 
+# xf - Ultra-fast X/Twitter archive search with Tantivy
+install_utils_xf() {
+    local module_id="utils.xf"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing utils.xf"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verified installer: utils.xf"
+    else
+        if ! {
+            # Try security-verified install (no unverified fallback; fail closed)
+            local install_success=false
+
+            if acfs_security_init; then
+                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+                # The grep ensures we specifically have an associative array, not just any variable
+                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
+                    local tool="xf"
+                    local url=""
+                    local expected_sha256=""
+
+                    # Safe access with explicit empty default
+                    url="${KNOWN_INSTALLERS[$tool]:-}"
+                    if ! expected_sha256="$(get_checksum "$tool")"; then
+                        log_error "utils.xf: get_checksum failed for tool '$tool'"
+                        expected_sha256=""
+                    fi
+
+                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                        if verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '-s' '--' '--easy-mode'; then
+                            install_success=true
+                        else
+                            log_error "utils.xf: verify_checksum or installer execution failed"
+                        fi
+                    else
+                        if [[ -z "$url" ]]; then
+                            log_error "utils.xf: KNOWN_INSTALLERS[$tool] not found"
+                        fi
+                        if [[ -z "$expected_sha256" ]]; then
+                            log_error "utils.xf: checksum for '$tool' not found"
+                        fi
+                    fi
+                else
+                    log_error "utils.xf: KNOWN_INSTALLERS array not available"
+                fi
+            else
+                log_error "utils.xf: acfs_security_init failed - check security.sh and checksums.yaml"
+            fi
+
+            # Verified install is required - no fallback
+            if [[ "$install_success" = "true" ]]; then
+                true
+            else
+                log_error "Verified install failed for utils.xf"
+                false
+            fi
+        }; then
+            log_warn "utils.xf: verified installer failed"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.xf" "verified installer failed"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.xf"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: xf --help || xf --version (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_XF'
+xf --help || xf --version
+INSTALL_UTILS_XF
+        then
+            log_warn "utils.xf: verify failed: xf --help || xf --version"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.xf" "verify failed: xf --help || xf --version"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.xf"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "utils.xf installed"
+}
+
 # Install all tools modules
 install_tools() {
     log_section "Installing tools modules"
+    install_tools_lazygit
+    install_tools_lazydocker
     install_tools_atuin
     install_tools_zoxide
     install_tools_ast_grep
     install_tools_vault
     install_utils_giil
     install_utils_csctf
+    install_utils_xf
 }
 
 # Run if executed directly
