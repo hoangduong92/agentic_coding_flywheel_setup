@@ -250,6 +250,19 @@ log_item() {
             [[ "$QUIET" != "true" ]] && printf "  ${YELLOW}[warn]${NC} %s\n" "$msg"
             [[ -n "$details" && "$QUIET" != "true" ]] && printf "       ${DIM}%s${NC}\n" "$details"
             ;;
+        wait)
+            [[ "$QUIET" != "true" ]] && printf "  ${YELLOW}[wait]${NC} %s\n" "$msg"
+            [[ -n "$details" && "$QUIET" != "true" ]] && printf "       ${DIM}%s${NC}\n" "$details"
+            ;;
+        fix)
+            [[ "$QUIET" != "true" ]] && printf "  ${YELLOW}[fix]${NC} %s\n" "$msg"
+            [[ -n "$details" && "$QUIET" != "true" ]] && printf "       ${DIM}%s${NC}\n" "$details"
+            ((SUCCESS_COUNT += 1))
+            ;;
+        info)
+            [[ "$QUIET" != "true" ]] && printf "  ${CYAN}[info]${NC} %s\n" "$msg"
+            [[ -n "$details" && "$QUIET" != "true" ]] && printf "       ${DIM}%s${NC}\n" "$details"
+            ;;
     esac
 }
 
@@ -622,10 +635,13 @@ update_apt() {
         return 0
     fi
 
-    # Check for apt lock
+    # Check for apt lock (with automatic waiting)
     if ! check_apt_lock; then
         return 0
     fi
+
+    # Fix any broken packages first
+    fix_apt_issues
 
     # Run apt update
     run_cmd_sudo "apt update" apt-get update -y
@@ -654,41 +670,139 @@ update_apt() {
     check_reboot_required
 }
 
-# Check if apt is locked by another process
-check_apt_lock() {
-    # Check for dpkg lock
-    if [[ -f /var/lib/dpkg/lock-frontend ]]; then
-        if fuser /var/lib/dpkg/lock-frontend &>/dev/null 2>&1; then
-            log_item "fail" "apt locked" "dpkg lock held by another process"
-            log_to_file "APT lock detected: /var/lib/dpkg/lock-frontend in use"
-            if [[ "$ABORT_ON_FAILURE" == "true" ]]; then
-                echo -e "${RED}Aborting: apt is locked by another process${NC}"
-                echo "Try: sudo killall apt apt-get dpkg  (use with caution)"
-                exit 1
+# Wait for apt lock to be released, with automatic retry
+# Returns 0 if lock is free, 1 if still locked after max attempts
+wait_for_apt_lock() {
+    local max_wait=${1:-120}  # Default 120 seconds (2 minutes)
+    local interval=5
+    local waited=0
+
+    while [[ $waited -lt $max_wait ]]; do
+        # Check if any apt-related process is running
+        local apt_procs=""
+        apt_procs=$(pgrep -a 'apt|dpkg|unattended-upgr' 2>/dev/null | head -3 || true)
+
+        # Check for lock files
+        local lock_held=false
+        if [[ -f /var/lib/dpkg/lock-frontend ]] && fuser /var/lib/dpkg/lock-frontend &>/dev/null; then
+            lock_held=true
+        elif [[ -f /var/lib/apt/lists/lock ]] && fuser /var/lib/apt/lists/lock &>/dev/null; then
+            lock_held=true
+        elif [[ -n "$apt_procs" ]]; then
+            lock_held=true
+        fi
+
+        if [[ "$lock_held" == "false" ]]; then
+            return 0
+        fi
+
+        if [[ $waited -eq 0 ]]; then
+            log_item "wait" "apt lock" "waiting for other package operations to complete..."
+            log_to_file "APT lock detected, waiting up to ${max_wait}s for release"
+            if [[ -n "$apt_procs" ]]; then
+                log_to_file "Running processes: $apt_procs"
             fi
-            return 1
+        fi
+
+        sleep "$interval"
+        waited=$((waited + interval))
+
+        # Progress indicator every 30 seconds
+        if [[ $((waited % 30)) -eq 0 ]] && [[ "$QUIET" != "true" ]]; then
+            echo -e "       ${DIM}Still waiting... (${waited}s/${max_wait}s)${NC}"
+        fi
+    done
+
+    return 1
+}
+
+# Fix common dpkg/apt issues automatically
+fix_apt_issues() {
+    log_to_file "Checking for apt issues to fix..."
+
+    # Fix interrupted dpkg (check if there are pending updates)
+    if ls /var/lib/dpkg/updates/* &>/dev/null; then
+        log_item "fix" "dpkg" "configuring interrupted packages"
+        log_to_file "Running: sudo dpkg --configure -a"
+        local dpkg_output
+        dpkg_output=$(sudo dpkg --configure -a 2>&1) || true
+        [[ -n "$dpkg_output" ]] && log_to_file "dpkg output: $dpkg_output"
+    fi
+
+    # Check for broken dependencies or packages needing reinstall
+    local needs_fix=false
+    local broken_count=0
+    broken_count=$(dpkg -l 2>/dev/null | grep -c "^..R" || true)
+    broken_count=$((broken_count + 0))  # Ensure integer
+    if [[ $broken_count -gt 0 ]]; then
+        needs_fix=true
+        log_to_file "Found $broken_count package(s) in reinstall-required state"
+    fi
+
+    # Also check if apt reports broken dependencies
+    if ! apt-get check &>/dev/null; then
+        needs_fix=true
+        log_to_file "apt-get check reported issues"
+    fi
+
+    if [[ "$needs_fix" == "true" ]]; then
+        log_item "fix" "apt" "fixing broken dependencies"
+        log_to_file "Running: sudo apt-get -f install -y"
+        local apt_output
+        apt_output=$(sudo apt-get -f install -y 2>&1) || true
+        [[ -n "$apt_output" ]] && log_to_file "apt-get -f output: $apt_output"
+    fi
+}
+
+# Check if apt is locked by another process, with automatic waiting and fixing
+check_apt_lock() {
+    # First attempt: check if lock is immediately available
+    local apt_procs=""
+    apt_procs=$(pgrep -a 'apt|dpkg|unattended-upgr' 2>/dev/null | head -1 || true)
+
+    if [[ -z "$apt_procs" ]]; then
+        # Also check lock files directly
+        if [[ -f /var/lib/dpkg/lock-frontend ]] && ! fuser /var/lib/dpkg/lock-frontend &>/dev/null; then
+            return 0  # Lock is free
+        elif [[ ! -f /var/lib/dpkg/lock-frontend ]]; then
+            return 0  # Lock file doesn't exist
         fi
     fi
 
-    # Check for apt/apt-get processes
-    if pgrep -x 'apt' &>/dev/null || pgrep -x 'apt-get' &>/dev/null || pgrep -x 'dpkg' &>/dev/null; then
-        log_item "fail" "apt locked" "apt/dpkg process running"
-        log_to_file "APT lock detected: apt/dpkg process already running"
-        if [[ "$ABORT_ON_FAILURE" == "true" ]]; then
-            echo -e "${RED}Aborting: another apt process is running${NC}"
-            exit 1
-        fi
-        return 1
+    # Lock is held - wait for it to be released
+    if wait_for_apt_lock 120; then
+        log_item "ok" "apt lock" "lock released, proceeding"
+        return 0
     fi
 
-    # Check for unattended-upgrades
+    # Still locked after waiting - try to diagnose
+    log_item "warn" "apt lock" "still locked after 2 minutes"
+    log_to_file "APT lock still held after waiting"
+
+    # Show what's holding the lock
+    local lock_holder=""
+    lock_holder=$(sudo fuser -v /var/lib/dpkg/lock-frontend 2>&1 || true)
+    if [[ -n "$lock_holder" ]]; then
+        log_to_file "Lock holder: $lock_holder"
+        if [[ "$QUIET" != "true" ]]; then
+            echo -e "       ${DIM}Lock held by: $lock_holder${NC}"
+        fi
+    fi
+
+    # Check for unattended-upgrades specifically
     if pgrep -x "unattended-upgr" &>/dev/null; then
-        log_item "skip" "apt" "unattended-upgrades running, will retry later"
-        log_to_file "Skipping apt: unattended-upgrades in progress"
-        return 1
+        log_item "info" "apt" "unattended-upgrades is running (this is normal on fresh systems)"
+        if [[ "$QUIET" != "true" ]]; then
+            echo -e "       ${DIM}Tip: You can wait, or stop it with: sudo systemctl stop unattended-upgrades${NC}"
+        fi
     fi
 
-    return 0
+    if [[ "$ABORT_ON_FAILURE" == "true" ]]; then
+        echo -e "${RED}Aborting: apt is locked and could not be released${NC}"
+        exit 1
+    fi
+
+    return 1
 }
 
 # Check if system reboot is required after updates
@@ -1074,6 +1188,38 @@ update_cloud() {
         fi
     else
         log_item "skip" "Vercel CLI" "not installed"
+    fi
+
+    # GitHub CLI (gh) - update extensions
+    if cmd_exists gh; then
+        capture_version_before "gh"
+        # Update gh extensions if any are installed
+        local gh_extensions=0
+        gh_extensions=$(gh extension list 2>/dev/null | wc -l || true)
+        gh_extensions=$((gh_extensions + 0))  # Strip whitespace, ensure integer
+        if [[ $gh_extensions -gt 0 ]]; then
+            run_cmd "GitHub CLI extensions" gh extension upgrade --all
+        else
+            log_item "ok" "GitHub CLI" "no extensions to update"
+        fi
+        # gh itself is updated via apt, log current version
+        if capture_version_after "gh"; then
+            [[ "$QUIET" != "true" ]] && printf "       ${DIM}version: %s${NC}\n" "${VERSION_AFTER[gh]}"
+        fi
+    else
+        log_item "skip" "GitHub CLI" "not installed"
+    fi
+
+    # Google Cloud SDK (gcloud)
+    if cmd_exists gcloud; then
+        capture_version_before "gcloud"
+        # gcloud components update requires --quiet for non-interactive
+        run_cmd "Google Cloud SDK" gcloud components update --quiet
+        if capture_version_after "gcloud"; then
+            [[ "$QUIET" != "true" ]] && printf "       ${DIM}%s → %s${NC}\n" "${VERSION_BEFORE[gcloud]}" "${VERSION_AFTER[gcloud]}"
+        fi
+    else
+        log_item "skip" "Google Cloud SDK" "not installed"
     fi
 }
 
@@ -1699,10 +1845,10 @@ USAGE:
 CATEGORY OPTIONS (select what to update):
   --apt-only         Only update system packages (apt)
   --agents-only      Only update coding agents (Claude, Codex, Gemini)
-  --cloud-only       Only update cloud CLIs (Wrangler, Supabase, Vercel)
+  --cloud-only       Only update cloud CLIs (Wrangler, Supabase, Vercel, gh, gcloud)
   --shell-only       Only update shell tools (OMZ, P10K, plugins, Atuin, Zoxide)
   --runtime-only     Only update runtimes (Bun, Rust, uv, Go)
-  --stack            Include Dicklesworthstone stack tools (default: disabled)
+  --stack            Include Dicklesworthstone stack tools (enabled by default)
 
 SKIP OPTIONS (exclude categories from update):
   --no-apt           Skip apt update/upgrade
@@ -1710,6 +1856,7 @@ SKIP OPTIONS (exclude categories from update):
   --no-cloud         Skip cloud CLI updates
   --no-shell         Skip shell tool updates
   --no-runtime       Skip runtime updates (Bun, Rust, uv, Go)
+  --no-stack         Skip Dicklesworthstone stack tool updates
 
 BEHAVIOR OPTIONS:
   --force            Install tools that are missing (not just update existing)
@@ -1722,11 +1869,11 @@ BEHAVIOR OPTIONS:
   --help, -h         Show this help message
 
 EXAMPLES:
-  # Standard update (apt, runtimes, shell, agents, cloud)
+  # Standard update (EVERYTHING: apt, runtimes, shell, agents, cloud, stack)
   acfs-update
 
-  # Include Dicklesworthstone stack
-  acfs-update --stack
+  # Skip Dicklesworthstone stack updates (faster)
+  acfs-update --no-stack
 
   # Only update agents
   acfs-update --agents-only
@@ -1744,10 +1891,10 @@ EXAMPLES:
   acfs-update --yes --quiet
 
   # Strict mode: stop on first error
-  acfs-update --abort-on-failure --stack
+  acfs-update --abort-on-failure
 
 WHAT EACH CATEGORY UPDATES:
-  apt:      System packages via apt update && apt upgrade
+  apt:      System packages via apt update && apt upgrade && apt autoremove
   shell:    Oh-My-Zsh, Powerlevel10k, zsh plugins (git pull)
             Atuin, Zoxide (reinstall from upstream)
   agents:   Claude Code (claude update)
@@ -1755,8 +1902,10 @@ WHAT EACH CATEGORY UPDATES:
             Gemini CLI (bun install -g --trust @google/gemini-cli@latest)
   cloud:    Wrangler, Vercel (bun install -g --trust <pkg>@latest)
             Supabase CLI (verified GitHub release tarball + sha256 checksums)
+            GitHub CLI (gh extension upgrade --all)
+            Google Cloud SDK (gcloud components update)
   runtime:  Bun (bun upgrade), Rust (rustup update), uv (uv self update), Go (apt-managed)
-  stack:    NTM, UBS, BV, CASS, CM, CAAM, SLB (re-run upstream installers)
+  stack:    NTM, UBS, BV, CASS, CM, CAAM, SLB, DCG, RU (re-run upstream installers)
 
 LOGS:
   Update logs are saved to: ~/.acfs/logs/updates/
