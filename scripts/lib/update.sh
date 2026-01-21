@@ -12,6 +12,10 @@ export DEBIAN_FRONTEND=noninteractive
 ACFS_VERSION="${ACFS_VERSION:-0.1.0}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ACFS_REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Track if self-update already ran (prevents re-exec loops)
+ACFS_SELF_UPDATE_DONE="${ACFS_SELF_UPDATE_DONE:-false}"
 
 if [[ -f "$SCRIPT_DIR/../../VERSION" ]]; then
     ACFS_VERSION="$(cat "$SCRIPT_DIR/../../VERSION" 2>/dev/null || echo "$ACFS_VERSION")"
@@ -38,6 +42,7 @@ UPDATE_CLOUD=true
 UPDATE_RUNTIME=true
 UPDATE_STACK=true
 UPDATE_SHELL=true
+UPDATE_SELF=true
 FORCE_MODE=false
 DRY_RUN=false
 VERBOSE=false
@@ -620,6 +625,131 @@ update_run_verified_installer() {
 # ============================================================
 # Update Functions
 # ============================================================
+
+# ------------------------------------------------------------
+# Self-Update: Update ACFS itself before anything else
+# ------------------------------------------------------------
+# This ensures users always have the latest update logic,
+# security fixes, and new tool definitions.
+# ------------------------------------------------------------
+update_acfs_self() {
+    log_section "ACFS Self-Update"
+
+    # Skip if disabled
+    if [[ "$UPDATE_SELF" != "true" ]]; then
+        log_item "skip" "ACFS self-update" "disabled via --no-self-update"
+        return 0
+    fi
+
+    # Skip if already done (prevents infinite re-exec loops)
+    if [[ "$ACFS_SELF_UPDATE_DONE" == "true" ]]; then
+        log_item "skip" "ACFS self-update" "already completed"
+        return 0
+    fi
+
+    # Check if ACFS repo exists and is a git repo
+    if [[ ! -d "$ACFS_REPO_ROOT/.git" ]]; then
+        log_item "skip" "ACFS self-update" "not a git repository at $ACFS_REPO_ROOT"
+        return 0
+    fi
+
+    # Check if git is available
+    if ! command -v git &>/dev/null; then
+        log_item "skip" "ACFS self-update" "git not found"
+        return 0
+    fi
+
+    # Get current branch
+    local current_branch
+    current_branch=$(git -C "$ACFS_REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null) || {
+        log_item "warn" "ACFS self-update" "failed to get current branch"
+        return 0
+    }
+
+    # Only auto-update on main branch
+    if [[ "$current_branch" != "main" ]]; then
+        log_item "skip" "ACFS self-update" "not on main branch (on: $current_branch)"
+        return 0
+    fi
+
+    # Save current update.sh hash for re-exec detection
+    local update_script="$SCRIPT_DIR/update.sh"
+    local old_hash=""
+    if [[ -f "$update_script" ]]; then
+        old_hash=$(sha256sum "$update_script" 2>/dev/null | cut -d' ' -f1) || true
+    fi
+
+    # Fetch latest from origin
+    log_to_file "Fetching from origin..."
+    if ! git -C "$ACFS_REPO_ROOT" fetch origin main --quiet 2>/dev/null; then
+        log_item "warn" "ACFS self-update" "git fetch failed (network issue?)"
+        return 0
+    fi
+
+    # Compare local HEAD with remote
+    local local_head remote_head
+    local_head=$(git -C "$ACFS_REPO_ROOT" rev-parse HEAD 2>/dev/null) || true
+    remote_head=$(git -C "$ACFS_REPO_ROOT" rev-parse origin/main 2>/dev/null) || true
+
+    if [[ -z "$local_head" ]] || [[ -z "$remote_head" ]]; then
+        log_item "warn" "ACFS self-update" "failed to compare versions"
+        return 0
+    fi
+
+    if [[ "$local_head" == "$remote_head" ]]; then
+        log_item "ok" "ACFS" "already up to date"
+        return 0
+    fi
+
+    # Show what's coming
+    local commit_count
+    commit_count=$(git -C "$ACFS_REPO_ROOT" rev-list --count HEAD..origin/main 2>/dev/null) || commit_count="?"
+    log_to_file "Found $commit_count new commit(s)"
+
+    # Dry run mode
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_item "ok" "ACFS" "would update ($commit_count new commits)"
+        return 0
+    fi
+
+    # Check for local modifications that would block pull
+    if ! git -C "$ACFS_REPO_ROOT" diff --quiet 2>/dev/null; then
+        log_item "warn" "ACFS self-update" "local modifications detected, skipping"
+        log_to_file "Run 'git -C $ACFS_REPO_ROOT status' to see changes"
+        return 0
+    fi
+
+    # Pull updates
+    log_to_file "Pulling updates..."
+    if ! git -C "$ACFS_REPO_ROOT" pull --ff-only origin main 2>/dev/null; then
+        log_item "warn" "ACFS self-update" "git pull failed"
+        log_to_file "Try: git -C $ACFS_REPO_ROOT pull --ff-only origin main"
+        return 0
+    fi
+
+    log_item "ok" "ACFS" "updated ($commit_count commits)"
+    log_to_file "ACFS updated from $local_head to $remote_head"
+
+    # Check if update.sh itself changed - if so, re-exec
+    local new_hash=""
+    if [[ -f "$update_script" ]]; then
+        new_hash=$(sha256sum "$update_script" 2>/dev/null | cut -d' ' -f1) || true
+    fi
+
+    if [[ -n "$old_hash" ]] && [[ -n "$new_hash" ]] && [[ "$old_hash" != "$new_hash" ]]; then
+        log_to_file "update.sh changed, re-executing with new version..."
+        echo ""
+        echo -e "${CYAN}update.sh was updated, restarting with new version...${NC}"
+        echo ""
+
+        # Re-exec with same args, but mark self-update as done
+        export ACFS_SELF_UPDATE_DONE=true
+        exec "$update_script" "$@"
+        # exec replaces this process, so we never reach here
+    fi
+
+    return 0
+}
 
 update_apt() {
     log_section "System Packages (apt)"
@@ -1852,6 +1982,7 @@ CATEGORY OPTIONS (select what to update):
   --stack            Include Dicklesworthstone stack tools (enabled by default)
 
 SKIP OPTIONS (exclude categories from update):
+  --no-self-update   Skip ACFS self-update (not recommended)
   --no-apt           Skip apt update/upgrade
   --no-agents        Skip coding agent updates
   --no-cloud         Skip cloud CLI updates
@@ -1895,6 +2026,8 @@ EXAMPLES:
   acfs-update --abort-on-failure
 
 WHAT EACH CATEGORY UPDATES:
+  self:     ACFS itself (git pull) - runs FIRST to ensure latest update logic
+            If update.sh changes, automatically re-executes with new version
   apt:      System packages via apt update && apt upgrade && apt autoremove
   shell:    Oh-My-Zsh, Powerlevel10k, zsh plugins (git pull)
             Atuin, Zoxide (reinstall from upstream)
@@ -2026,6 +2159,10 @@ main() {
                 UPDATE_STACK=false
                 shift
                 ;;
+            --no-self-update)
+                UPDATE_SELF=false
+                shift
+                ;;
             --force)
                 FORCE_MODE=true
                 shift
@@ -2078,6 +2215,11 @@ main() {
             fi
         fi
     fi
+
+    # Self-update ACFS before touching any other components.
+    # This runs BEFORE init_logging so we get the latest update logic ASAP.
+    # Pass original args so re-exec (if update.sh changed) uses the same arguments.
+    update_acfs_self "${ACFS_UPDATE_ARGS[@]}"
 
     # Initialize logging
     init_logging
