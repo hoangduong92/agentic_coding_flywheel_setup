@@ -386,13 +386,19 @@ refresh_checksums() {
     if curl -fsSL --connect-timeout 5 --max-time 30 -o "$tmp_checksums" "$CHECKSUMS_URL" 2>/dev/null; then
         # Validate it looks like a checksums file
         if grep -q "^installers:" "$tmp_checksums" 2>/dev/null; then
-            mv "$tmp_checksums" "$CHECKSUMS_LOCAL"
-            chmod 644 "$CHECKSUMS_LOCAL" 2>/dev/null || true  # Ensure readable permissions
-            if [[ "$quiet" != "true" ]]; then
-                log_item "ok" "checksums refresh" "synced from GitHub"
+            if mv "$tmp_checksums" "$CHECKSUMS_LOCAL" 2>/dev/null; then
+                chmod 644 "$CHECKSUMS_LOCAL" 2>/dev/null || true  # Ensure readable permissions
+                if [[ "$quiet" != "true" ]]; then
+                    log_item "ok" "checksums refresh" "synced from GitHub"
+                fi
+                log_to_file "Refreshed checksums.yaml from $CHECKSUMS_URL"
+                return 0
+            else
+                rm -f "$tmp_checksums"
+                [[ "$quiet" != "true" ]] && log_item "warn" "checksums refresh" "failed to install, using cached"
+                log_to_file "Checksums refresh failed: mv failed"
+                return 1
             fi
-            log_to_file "Refreshed checksums.yaml from $CHECKSUMS_URL"
-            return 0
         else
             rm -f "$tmp_checksums"
             [[ "$quiet" != "true" ]] && log_item "warn" "checksums refresh" "invalid format, using cached"
