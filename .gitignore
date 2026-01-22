@@ -122,3 +122,4 @@ a.out
 .bv/
 .vercel
 .env*.local
+tests/artifacts/
