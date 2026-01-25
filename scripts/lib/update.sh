@@ -2091,6 +2091,9 @@ main() {
     # Ensure PATH includes user tool directories
     ensure_path
 
+    # Save original arguments before parsing (for re-exec after self-update)
+    local -a ACFS_UPDATE_ARGS=("$@")
+
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
