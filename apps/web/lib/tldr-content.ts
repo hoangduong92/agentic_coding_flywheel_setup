@@ -667,6 +667,52 @@ export const tldrFlywheelTools: TldrFlywheelTool[] = [
       "Searching across captured terminal sessions",
     ],
   },
+  {
+    id: "brenner",
+    name: "Brenner Bot",
+    shortName: "Brenner",
+    href: "https://github.com/Dicklesworthstone/brenner_bot",
+    icon: "FlaskConical",
+    color: "from-rose-500 to-pink-600",
+    category: "core",
+    stars: 28,
+    whatItDoes:
+      "Research orchestration platform inspired by Sydney Brenner's scientific methodology. Coordinates multi-agent AI research sessions with systematic problem formulation and rigorous constraint-based reasoning.",
+    whyItsUseful:
+      "Complex research problems need structured approaches. Brenner Bot combines a curated corpus with multi-model AI syntheses to enable collaborative scientific research conversations with proper citation tracking.",
+    implementationHighlights: [
+      "236-section transcript corpus with stable §n citations",
+      "Multi-model syntheses from Claude, GPT, Gemini",
+      "Artifact compiler with 50+ validation rules",
+      "Agent Mail integration for research sessions",
+    ],
+    synergies: [
+      {
+        toolId: "mail",
+        description: "Research sessions coordinate via Agent Mail threads",
+      },
+      {
+        toolId: "ntm",
+        description: "NTM spawns parallel research agents",
+      },
+      {
+        toolId: "cass",
+        description: "Research session history is searchable",
+      },
+    ],
+    techStack: ["TypeScript", "Bun", "Agent Mail", "Multi-model AI"],
+    keyFeatures: [
+      "Primary source corpus with citations",
+      "Multi-agent research sessions",
+      "Discriminative test ranking",
+      "Adversarial critique generation",
+    ],
+    useCases: [
+      "Structured hypothesis generation",
+      "Multi-model research synthesis",
+      "Scientific methodology workflows",
+    ],
+  },
   // ===========================================================================
   // SUPPORTING FLYWHEEL TOOLS
   // ===========================================================================
