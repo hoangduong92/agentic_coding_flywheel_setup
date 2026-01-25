@@ -918,6 +918,54 @@ check_stack() {
             "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/repo_updater/main/install.sh | bash"
     fi
 
+    # Check beads_rust (br) - local-first issue tracker
+    if command -v br &>/dev/null; then
+        local version
+        version=$(get_version_line "br")
+        check "stack.beads_rust" "beads_rust ($version)" "pass" "installed"
+    else
+        check "stack.beads_rust" "beads_rust (br)" "warn" "not installed" \
+            "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh | bash"
+    fi
+
+    # Check meta_skill (ms)
+    if command -v ms &>/dev/null; then
+        local version
+        version=$(get_version_line "ms")
+        check "stack.meta_skill" "meta_skill ($version)" "pass" "installed"
+    else
+        check "stack.meta_skill" "meta_skill (ms)" "warn" "not installed" \
+            "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/meta_skill/main/scripts/install.sh | bash"
+    fi
+
+    # Check rch (Remote Compilation Helper)
+    if command -v rch &>/dev/null; then
+        local version
+        version=$(get_version_line "rch")
+        check "stack.rch" "rch ($version)" "pass" "installed"
+    else
+        check "stack.rch" "rch (Remote Compilation Helper)" "warn" "not installed" \
+            "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/remote_compilation_helper/master/install.sh | bash"
+    fi
+
+    # Check wa (WezTerm Automata) - optional
+    if command -v wa &>/dev/null; then
+        local version
+        version=$(get_version_line "wa")
+        check "stack.wezterm_automata" "wezterm_automata ($version)" "pass" "installed"
+    else
+        check "stack.wezterm_automata" "wezterm_automata (wa)" "skip" "not installed (optional)"
+    fi
+
+    # Check brenner (Brenner Bot) - optional
+    if command -v brenner &>/dev/null; then
+        local version
+        version=$(get_version_line "brenner")
+        check "stack.brenner_bot" "brenner_bot ($version)" "pass" "installed"
+    else
+        check "stack.brenner_bot" "brenner_bot" "skip" "not installed (optional)"
+    fi
+
     # Check DCG (Destructive Command Guard)
     check_dcg_hook_status
 

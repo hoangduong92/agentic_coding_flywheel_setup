@@ -123,6 +123,52 @@ export const tldrFlywheelTools: TldrFlywheelTool[] = [
     ],
   },
   {
+    id: "br",
+    name: "beads_rust",
+    shortName: "BR",
+    href: "https://github.com/Dicklesworthstone/beads_rust",
+    icon: "ListTodo",
+    color: "from-amber-500 to-orange-600",
+    category: "core",
+    stars: 128,
+    whatItDoes:
+      "Local-first issue tracking for AI agents. Issues live in .beads/*.jsonl files that commit with your code. Full dependency graph with blocking/blocked-by relationships.",
+    whyItsUseful:
+      "Your issues travel with your repo - no external service required. Agents can create, update, and close issues with simple CLI commands. The bd alias provides backward compatibility with the original Go version.",
+    implementationHighlights: [
+      "Rust port of the original Go beads CLI",
+      "Issues stored in JSONL - human readable, git friendly",
+      "Auto-flush syncs state to disk automatically",
+      "Full dependency graph with blocks/blocked-by",
+    ],
+    synergies: [
+      {
+        toolId: "bv",
+        description: "BV visualizes and analyzes issues created by br",
+      },
+      {
+        toolId: "mail",
+        description: "Task updates notify agents via mail",
+      },
+      {
+        toolId: "ntm",
+        description: "NTM spawns agents that pick work from beads",
+      },
+    ],
+    techStack: ["Rust", "Serde", "JSONL"],
+    keyFeatures: [
+      "Local-first issue storage",
+      "Dependency graph tracking",
+      "Labels, priorities, comments",
+      "JSON output for agents",
+    ],
+    useCases: [
+      "Tracking tasks that travel with the code",
+      "Building dependency graphs for complex projects",
+      "Enabling agents to manage their own work queues",
+    ],
+  },
+  {
     id: "cass",
     name: "Coding Agent Session Search",
     shortName: "CASS",
@@ -527,6 +573,52 @@ export const tldrFlywheelTools: TldrFlywheelTool[] = [
       "AI agents querying skills via MCP during sessions",
       "Building team-wide skill libraries with effectiveness tracking",
       "Packaging and sharing skills via signed bundles",
+    ],
+  },
+  {
+    id: "rch",
+    name: "Remote Compilation Helper",
+    shortName: "RCH",
+    href: "https://github.com/Dicklesworthstone/remote_compilation_helper",
+    icon: "Cpu",
+    color: "from-indigo-500 to-blue-600",
+    category: "core",
+    stars: 35,
+    whatItDoes:
+      "Offloads Rust compilation to remote workers via transparent cargo interception. Syncs source via rsync, builds remotely, and streams artifacts back.",
+    whyItsUseful:
+      "Multi-agent swarms trigger many concurrent builds. RCH transparently routes cargo commands to powerful remote machines, preventing local CPU bottlenecks and dramatically reducing build times.",
+    implementationHighlights: [
+      "Claude Code hook intercepts cargo commands",
+      "rsync + zstd for fast source synchronization",
+      "Worker pool with priority-based scheduling",
+      "Artifact streaming with incremental updates",
+    ],
+    synergies: [
+      {
+        toolId: "ntm",
+        description: "Agents in NTM sessions use RCH for builds",
+      },
+      {
+        toolId: "ru",
+        description: "RU syncs repos that RCH then builds remotely",
+      },
+      {
+        toolId: "bv",
+        description: "Build tasks can be tracked via beads",
+      },
+    ],
+    techStack: ["Rust", "rsync", "zstd", "SSH", "Claude Code hooks"],
+    keyFeatures: [
+      "Transparent cargo interception",
+      "Multi-worker pool with priority scheduling",
+      "Incremental artifact sync",
+      "Daemon mode with status monitoring",
+    ],
+    useCases: [
+      "Offloading builds during multi-agent sessions",
+      "Reducing local CPU usage during heavy compilation",
+      "Distributing builds across powerful remote servers",
     ],
   },
   // ===========================================================================

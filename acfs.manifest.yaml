@@ -1082,6 +1082,28 @@ modules:
       - ubs --help
       - ubs doctor || true
 
+  - id: stack.beads_rust
+    description: beads_rust (br) - Rust issue tracker with graph-aware dependencies
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v br"
+    verified_installer:
+      tool: br
+      runner: bash
+      url: "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh"
+    install: []
+    verify:
+      - br --version
+      - br list --json 2>/dev/null || true
+
   - id: stack.beads_viewer
     description: bv TUI for Beads tasks
     category: stack
@@ -1092,9 +1114,10 @@ modules:
     tags: [recommended]
     dependencies:
       - lang.go
+      - stack.beads_rust
     installed_check:
       run_as: target_user
-      command: "command -v bv || command -v bd"
+      command: "command -v bv"
     verified_installer:
       tool: bv
       runner: bash
@@ -1255,6 +1278,74 @@ modules:
     verify:
       - ru --version
 
+  - id: stack.brenner_bot
+    description: Brenner Bot - research session manager with hypothesis tracking
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: true
+    tags: [recommended]
+    dependencies:
+      - lang.rust
+      - stack.cass  # for session search integration
+    installed_check:
+      run_as: target_user
+      command: "command -v brenner"
+    verified_installer:
+      tool: brenner_bot
+      runner: bash
+      url: "https://raw.githubusercontent.com/Dicklesworthstone/brenner_bot/main/install.sh"
+    install: []
+    verify:
+      - brenner --version || brenner --help
+
+  - id: stack.rch
+    description: Remote Compilation Helper - transparent build offloading for AI coding agents
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: true
+    tags: [recommended, performance]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v rch"
+    verified_installer:
+      tool: rch
+      runner: bash
+      url: "https://raw.githubusercontent.com/Dicklesworthstone/remote_compilation_helper/master/install.sh"
+    install: []
+    verify:
+      - rch --version || rch --help
+
+  - id: stack.wezterm_automata
+    description: WezTerm Automata (wa) - terminal automation and orchestration for AI agents
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: true
+    tags: [recommended, automation]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v wa"
+    install:
+      # No install.sh yet - build from source via cargo
+      - |
+        WA_TMP="$(mktemp -d "${TMPDIR:-/tmp}/wa_build.XXXXXX")"
+        cd "$WA_TMP"
+        git clone --depth 1 https://github.com/Dicklesworthstone/wezterm_automata.git .
+        cargo build --release -p wa
+        cp target/release/wa ~/.cargo/bin/
+        rm -rf "$WA_TMP"
+    verify:
+      - wa --version || wa --help
+
   - id: stack.srps
     description: System Resource Protection Script - ananicy-cpp rules + TUI monitor for responsive dev workstations
     category: stack
@@ -1346,6 +1437,165 @@ modules:
     install: []
     verify:
       - xf --help || xf --version
+
+  - id: utils.toon_rust
+    description: toon_rust (tru) - Token-optimized notation format for LLM context efficiency
+    category: tools
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: true
+    tags: [utility, llm]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v tru"
+    verified_installer:
+      tool: tru
+      runner: bash
+      url: "https://raw.githubusercontent.com/Dicklesworthstone/toon_rust/master/install.sh"
+    install: []
+    verify:
+      - tru --help || tru --version
+
+  - id: utils.rano
+    description: rano - Network observer for AI CLIs with request/response logging
+    category: tools
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: false
+    tags: [utility, network, debug]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v rano"
+    verified_installer:
+      tool: rano
+      runner: bash
+      url: "https://raw.githubusercontent.com/Dicklesworthstone/rano/main/install.sh"
+    install: []
+    verify:
+      - rano --help || rano --version
+
+  - id: utils.mdwb
+    description: markdown_web_browser (mdwb) - Convert websites to Markdown for LLM consumption
+    category: tools
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: true
+    tags: [utility, web, llm]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v mdwb"
+    verified_installer:
+      tool: mdwb
+      runner: bash
+      url: "https://raw.githubusercontent.com/Dicklesworthstone/markdown_web_browser/main/install.sh"
+    install: []
+    verify:
+      - mdwb --help || mdwb --version
+
+  - id: utils.s2p
+    description: source_to_prompt_tui (s2p) - Code to LLM prompt generator with TUI
+    category: tools
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: true
+    tags: [utility, llm, tui]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v s2p"
+    verified_installer:
+      tool: s2p
+      runner: bash
+      url: "https://raw.githubusercontent.com/Dicklesworthstone/source_to_prompt_tui/main/install.sh"
+    install: []
+    verify:
+      - s2p --help || s2p --version
+
+  - id: utils.rust_proxy
+    description: rust_proxy - Transparent proxy routing for debugging network traffic
+    category: tools
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: false
+    tags: [utility, network, debug]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v rust_proxy"
+    install:
+      - |
+        # Build rust_proxy from source (no install.sh available)
+        TMPDIR="$(mktemp -d)"
+        git clone --depth 1 https://github.com/Dicklesworthstone/rust_proxy.git "$TMPDIR/rust_proxy"
+        cd "$TMPDIR/rust_proxy"
+        cargo build --release
+        cp target/release/rust_proxy ~/.cargo/bin/
+        rm -rf "$TMPDIR"
+    verify:
+      - rust_proxy --help || rust_proxy --version
+
+  - id: utils.aadc
+    description: aadc - ASCII diagram corrector for fixing malformed ASCII art
+    category: tools
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: false
+    tags: [utility, ascii]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v aadc"
+    install:
+      - |
+        # Build aadc from source (no install.sh available)
+        TMPDIR="$(mktemp -d)"
+        git clone --depth 1 https://github.com/Dicklesworthstone/aadc.git "$TMPDIR/aadc"
+        cd "$TMPDIR/aadc"
+        cargo build --release
+        cp target/release/aadc ~/.cargo/bin/
+        rm -rf "$TMPDIR"
+    verify:
+      - aadc --help || aadc --version
+
+  - id: utils.caut
+    description: coding_agent_usage_tracker (caut) - LLM provider usage tracker
+    category: tools
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: false
+    tags: [utility, tracking]
+    dependencies:
+      - lang.rust
+    installed_check:
+      run_as: target_user
+      command: "command -v caut"
+    install:
+      - |
+        # Build caut from source (no install.sh available)
+        TMPDIR="$(mktemp -d)"
+        git clone --depth 1 https://github.com/Dicklesworthstone/coding_agent_usage_tracker.git "$TMPDIR/caut"
+        cd "$TMPDIR/caut"
+        cargo build --release
+        cp target/release/caut ~/.cargo/bin/
+        rm -rf "$TMPDIR"
+    verify:
+      - caut --help || caut --version
 
   # ============================================================
   # PHASE 10: Finalization (onboard, doctor, verification)

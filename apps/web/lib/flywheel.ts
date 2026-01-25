@@ -106,7 +106,7 @@ export const workflowScenarios: WorkflowScenario[] = [
       },
       {
         tool: "bv",
-        action: "Creates beads for each issue: `bd create --title='Fix auth bug'`",
+        action: "Creates beads for each issue: `br create --title='Fix auth bug'`",
         result: "Issues tracked with dependencies and priorities",
       },
       {
@@ -568,8 +568,9 @@ export const flywheelTools: FlywheelTool[] = [
       "Transforms task tracking with DAG-based analysis. Nine graph metrics, robot protocol for AI, time-travel diffing. Agents use BV to figure out what to work on next.",
     deepDescription:
       "BV treats your project as a Directed Acyclic Graph. Computes PageRank, Betweenness Centrality, HITS, Critical Path, and more. Robot protocol (--robot-*) outputs structured JSON for agents. Time-travel lets you diff across git history.",
-    connectsTo: ["mail", "ubs", "cass", "cm", "ru"],
+    connectsTo: ["br", "mail", "ubs", "cass", "cm", "ru"],
     connectionDescriptions: {
+      br: "Reads and visualizes issues created by beads_rust (br)",
       mail: "Task updates trigger notifications",
       ubs: "Bug scan results create blocking issues",
       cass: "Search prior sessions for task context",
@@ -595,6 +596,45 @@ export const flywheelTools: FlywheelTool[] = [
     installCommand:
       'curl --proto \'=https\' --proto-redir \'=https\' -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/main/install.sh" | bash',
     language: "Go",
+  },
+  {
+    id: "br",
+    name: "beads_rust",
+    shortName: "BR",
+    href: "https://github.com/Dicklesworthstone/beads_rust",
+    icon: "ListTodo",
+    color: "from-amber-400 to-orange-500",
+    tagline: "Rust-powered issue tracking CLI",
+    description:
+      "Local-first issue tracking for AI agents. Stores issues in .beads/*.jsonl files that commit with code. Dependencies, labels, priorities, blocking relationships. The bd alias provides backward compatibility.",
+    deepDescription:
+      "beads_rust (br) is the Rust port of the beads issue tracker, replacing the original Go version. Issues live in .beads/*.jsonl - they travel with your repo. Full dependency graph with blocking/blocked-by relationships. Labels, priorities, comments, time tracking. Auto-flush syncs state to disk. Works offline, syncs on commit.",
+    connectsTo: ["bv", "mail", "ntm", "ru"],
+    connectionDescriptions: {
+      bv: "BV visualizes and analyzes beads from br",
+      mail: "Task updates notify agents via mail",
+      ntm: "NTM spawns agents that pick work from beads",
+      ru: "RU syncs repos containing beads across projects",
+    },
+    stars: 128,
+    features: [
+      "Local-first: .beads/*.jsonl commits with code",
+      "Full dependency graph: blocks/blocked-by relationships",
+      "Labels, priorities (P0-P3), comments, time tracking",
+      "Auto-flush: changes sync to disk automatically",
+      "bd alias for backward compatibility with golang beads",
+      "JSON output for robot/agent consumption",
+    ],
+    cliCommands: [
+      "br create --title 'Fix bug' --priority 1 --label backend",
+      "br list --status open --json",
+      "br update <id> --status in_progress",
+      "br close <id> --reason 'Fixed in commit abc123'",
+      "br ready --json",
+    ],
+    installCommand:
+      'curl --proto \'=https\' --proto-redir \'=https\' -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh" | bash',
+    language: "Rust",
   },
   {
     id: "cass",
@@ -835,11 +875,12 @@ export const flywheelTools: FlywheelTool[] = [
       "Store skills, search them, track effectiveness, package for sharing, and integrate with AI agents via MCP server. Skills come from hand-written files, CASS mining, bundles, or guided workflows.",
     deepDescription:
       "MS is the skill management layer for AI agents. Thompson sampling learns which skills work best over time. The MCP server exposes 6 native tools (search, load, evidence, list, show, doctor) so any AI agent can query skills directly. Multi-layer security: ACIP detects prompt injection, DCG classifies command safety, path policy prevents escapes, secret scanner redacts sensitive data.",
-    connectsTo: ["cass", "cm", "bv"],
+    connectsTo: ["cass", "cm", "bv", "br"],
     connectionDescriptions: {
       cass: "One input source for skill extraction (among several)",
       cm: "Skills and CM memories are complementary knowledge layers",
       bv: "Graph analysis via bv for PageRank, betweenness, cycles",
+      br: "Skill workflows generate beads for execution tracking",
     },
     stars: 10,
     features: [
@@ -857,7 +898,112 @@ export const flywheelTools: FlywheelTool[] = [
       "ms security scan <file>   # ACIP prompt injection check",
       "ms graph insights         # Dependency analysis via bv",
     ],
-    installCommand: "cargo install --git https://github.com/Dicklesworthstone/meta_skill",
+    installCommand:
+      'curl --proto \'=https\' --proto-redir \'=https\' -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/meta_skill/main/scripts/install.sh" | bash',
+    language: "Rust",
+  },
+  {
+    id: "rch",
+    name: "Remote Compilation Helper",
+    shortName: "RCH",
+    href: "https://github.com/Dicklesworthstone/remote_compilation_helper",
+    icon: "Cloud",
+    color: "from-blue-500 to-indigo-600",
+    tagline: "Offload Rust builds to remote workers",
+    description:
+      "Transparently offloads cargo builds to powerful remote machines. Your local machine stays cool while remote workers handle compilation. Seamless rsync integration.",
+    deepDescription:
+      "RCH intercepts cargo commands and offloads compilation to remote workers via SSH. File sync via rsync keeps source and artifacts in sync. Works with any cargo command. Configurable worker pools for load balancing. Dramatically speeds up builds on laptops by using server-grade hardware.",
+    connectsTo: ["ntm", "ru", "br"],
+    connectionDescriptions: {
+      ntm: "NTM can spawn agents on same machines RCH uses as workers",
+      ru: "RU syncs repos that RCH then builds remotely",
+      br: "Build tasks tracked via beads",
+    },
+    stars: 45,
+    features: [
+      "Transparent cargo interception",
+      "rsync-based file synchronization",
+      "Configurable remote worker pools",
+      "SSH multiplexing for low latency",
+      "Works with cargo build, test, clippy, etc.",
+    ],
+    cliCommands: [
+      "rch --help                  # Show usage",
+      "rch cargo build --release  # Build remotely",
+      "rch status                  # Check worker status",
+    ],
+    installCommand:
+      'curl --proto \'=https\' --proto-redir \'=https\' -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/remote_compilation_helper/master/install.sh" | bash',
+    language: "Rust",
+  },
+  {
+    id: "wa",
+    name: "WezTerm Automata",
+    shortName: "WA",
+    href: "https://github.com/Dicklesworthstone/wezterm_automata",
+    icon: "Terminal",
+    color: "from-purple-500 to-violet-600",
+    tagline: "Scriptable terminal automation",
+    description:
+      "Automates WezTerm terminal interactions. Send keystrokes, read screen content, manage panes and tabs programmatically. Perfect for agent orchestration.",
+    deepDescription:
+      "WA exposes WezTerm's Lua API for external automation. Agents can spawn terminal sessions, send commands, read output, and manage window layouts. Works with NTM for multi-agent coordination. Enables sophisticated agent workflows that require terminal control.",
+    connectsTo: ["ntm", "br"],
+    connectionDescriptions: {
+      ntm: "NTM uses WA for terminal session management",
+      br: "Terminal automation tasks tracked via beads",
+    },
+    stars: 32,
+    features: [
+      "Send keystrokes to any pane",
+      "Read screen buffer content",
+      "Manage panes and tabs programmatically",
+      "Lua scripting integration",
+      "Event-driven automation hooks",
+    ],
+    cliCommands: [
+      "wa send 'git status'      # Send command to pane",
+      "wa read-screen             # Get current screen content",
+      "wa split --direction right # Split pane",
+    ],
+    installCommand: "cargo install --git https://github.com/Dicklesworthstone/wezterm_automata",
+    language: "Rust",
+  },
+  {
+    id: "brenner",
+    name: "Brenner Bot",
+    shortName: "BRENNER",
+    href: "https://github.com/Dicklesworthstone/brenner_bot",
+    icon: "Bot",
+    color: "from-rose-500 to-red-600",
+    tagline: "Research methodology automation",
+    description:
+      "Automates Brenner research methodology. Manages hypothesis slates, triangulated analysis, corpus mining, and systematic inquiry workflows.",
+    deepDescription:
+      "Brenner Bot encapsulates the Brenner operators for systematic research: Problem Selection, Hypothesis Slate, Third Alternative, Iterative Refinement, Ruthless Kill, Quickie Pilot, Materialization, and Inner Truth extraction. Agents use it to run methodical research sessions that converge on validated insights.",
+    connectsTo: ["cass", "cm", "br", "ms"],
+    connectionDescriptions: {
+      cass: "Searches past sessions for research context",
+      cm: "Research findings become procedural memories",
+      br: "Research tasks tracked via beads",
+      ms: "Research patterns become skills",
+    },
+    stars: 28,
+    features: [
+      "Brenner operator automation",
+      "Hypothesis slate management",
+      "Corpus mining and triangulation",
+      "Convergence detection",
+      "Research session archival",
+    ],
+    cliCommands: [
+      "brenner session start       # Start research session",
+      "brenner hypothesis add      # Add to hypothesis slate",
+      "brenner converge            # Check convergence state",
+    ],
+    installCommand:
+      'curl --proto \'=https\' --proto-redir \'=https\' -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/brenner_bot/main/install.sh" | bash',
     language: "Rust",
   },
   {

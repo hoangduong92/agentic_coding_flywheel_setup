@@ -159,6 +159,7 @@ install_all() {
     install_stack_jeffreysprompts
     install_stack_process_triage
     install_stack_ultimate_bug_scanner
+    install_stack_beads_rust
     install_stack_beads_viewer
     install_stack_cass
     install_stack_cm
@@ -166,11 +167,21 @@ install_all() {
     install_stack_slb
     install_stack_dcg
     install_stack_ru
+    install_stack_brenner_bot
+    install_stack_rch
+    install_stack_wezterm_automata
     install_stack_srps
     log_section "Category: tools"
     install_utils_giil
     install_utils_csctf
     install_utils_xf
+    install_utils_toon_rust
+    install_utils_rano
+    install_utils_mdwb
+    install_utils_s2p
+    install_utils_rust_proxy
+    install_utils_aadc
+    install_utils_caut
     log_section "Category: acfs"
     install_acfs_workspace
     install_acfs_onboard

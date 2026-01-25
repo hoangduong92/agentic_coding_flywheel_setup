@@ -366,8 +366,8 @@ shellcheck install.sh scripts/lib/*.sh
 
 All issue tracking goes through **Beads**. No other TODO systems.
 
-**Note:** `br` is a convenience alias (installed by `acfs/zsh/acfs.zshrc`) for the real Beads CLI: `bd`.
-If `br` is unavailable (CI / non-interactive shells), use `bd` directly.
+**Note:** `bd` is a backward-compatibility alias (installed by `acfs/zsh/acfs.zshrc`) for the beads_rust CLI: `br`.
+The primary command is `br`. The old `bd` (golang beads) is deprecated but aliased for compatibility.
 
 Key invariants:
 

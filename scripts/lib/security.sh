@@ -52,9 +52,6 @@ acfs_curl() {
     curl "${ACFS_CURL_BASE_ARGS[@]}" "$@"
 }
 
-# Preserve trailing newlines when capturing remote script content.
-ACFS_EOF_SENTINEL="__ACFS_EOF_SENTINEL__"
-
 # Automatic retries for transient network errors (fast total budget).
 ACFS_CURL_RETRY_DELAYS=(0 5 15)
 
@@ -229,6 +226,19 @@ calculate_file_sha256() {
     fi
 }
 
+# Calculate SHA256 from stdin
+# Usage: printf 'content' | calculate_sha256
+calculate_sha256() {
+    if command -v sha256sum &>/dev/null; then
+        sha256sum | cut -d' ' -f1
+    elif command -v shasum &>/dev/null; then
+        shasum -a 256 | cut -d' ' -f1
+    else
+        log_error "No SHA256 tool available"
+        return 1
+    fi
+}
+
 # Fetch content and calculate checksum (using temp file)
 fetch_checksum() {
     local url="$1"
@@ -392,23 +402,26 @@ fetch_and_run_with_recovery() {
         return 1
     fi
 
-    # Fetch content with retries
-    local sentinel="${ACFS_EOF_SENTINEL}"
-    local content
-    content="$(acfs_curl_with_retry_and_sentinel "$url" "$name")" || {
-        log_error "Error: Failed to fetch $name"
+    # Create safe temp file
+    local tmp_file
+    tmp_file="$(mktemp "${TMPDIR:-/tmp}/acfs-recovery.XXXXXX")" || {
+        log_error "Failed to create temp file for $name"
         return 1
     }
 
-    if [[ "$content" != *"$sentinel" ]]; then
+    # Ensure cleanup
+    # shellcheck disable=SC2064
+    trap "rm -f '$tmp_file'" RETURN
+
+    # Fetch content to file with retries
+    if ! acfs_download_to_file "$url" "$tmp_file" "$name"; then
         log_error "Error: Failed to fetch $name"
         return 1
     fi
-    content="${content%"$sentinel"}"
 
     # Calculate actual checksum
     local actual_sha256
-    actual_sha256=$(printf '%s' "$content" | calculate_sha256) || {
+    actual_sha256=$(calculate_file_sha256 "$tmp_file") || {
         log_error "Error: Failed to calculate checksum for $name"
         return 1
     }
@@ -439,8 +452,8 @@ fetch_and_run_with_recovery() {
         log_success "Verified: $name"
     fi
 
-    # Run the installer
-    printf '%s' "$content" | bash -s -- "${args[@]}"
+    # Run the installer from verified file
+    bash "$tmp_file" "${args[@]}"
 }
 
 # ============================================================

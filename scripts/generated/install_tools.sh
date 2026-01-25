@@ -93,7 +93,7 @@ acfs_security_init() {
 }
 
 # Category: tools
-# Modules: 9
+# Modules: 16
 
 # Lazygit (apt or binary fallback)
 install_tools_lazygit() {
@@ -716,6 +716,508 @@ INSTALL_UTILS_XF
     log_success "utils.xf installed"
 }
 
+# toon_rust (tru) - Token-optimized notation format for LLM context efficiency
+install_utils_toon_rust() {
+    local module_id="utils.toon_rust"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing utils.toon_rust"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verified installer: utils.toon_rust"
+    else
+        if ! {
+            # Try security-verified install (no unverified fallback; fail closed)
+            local install_success=false
+
+            if acfs_security_init; then
+                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+                # The grep ensures we specifically have an associative array, not just any variable
+                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
+                    local tool="tru"
+                    local url=""
+                    local expected_sha256=""
+
+                    # Safe access with explicit empty default
+                    url="${KNOWN_INSTALLERS[$tool]:-}"
+                    if ! expected_sha256="$(get_checksum "$tool")"; then
+                        log_error "utils.toon_rust: get_checksum failed for tool '$tool'"
+                        expected_sha256=""
+                    fi
+
+                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                        if verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '-s'; then
+                            install_success=true
+                        else
+                            log_error "utils.toon_rust: verify_checksum or installer execution failed"
+                        fi
+                    else
+                        if [[ -z "$url" ]]; then
+                            log_error "utils.toon_rust: KNOWN_INSTALLERS[$tool] not found"
+                        fi
+                        if [[ -z "$expected_sha256" ]]; then
+                            log_error "utils.toon_rust: checksum for '$tool' not found"
+                        fi
+                    fi
+                else
+                    log_error "utils.toon_rust: KNOWN_INSTALLERS array not available"
+                fi
+            else
+                log_error "utils.toon_rust: acfs_security_init failed - check security.sh and checksums.yaml"
+            fi
+
+            # Verified install is required - no fallback
+            if [[ "$install_success" = "true" ]]; then
+                true
+            else
+                log_error "Verified install failed for utils.toon_rust"
+                false
+            fi
+        }; then
+            log_warn "utils.toon_rust: verified installer failed"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.toon_rust" "verified installer failed"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.toon_rust"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: tru --help || tru --version (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_TOON_RUST'
+tru --help || tru --version
+INSTALL_UTILS_TOON_RUST
+        then
+            log_warn "utils.toon_rust: verify failed: tru --help || tru --version"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.toon_rust" "verify failed: tru --help || tru --version"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.toon_rust"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "utils.toon_rust installed"
+}
+
+# rano - Network observer for AI CLIs with request/response logging
+install_utils_rano() {
+    local module_id="utils.rano"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing utils.rano"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verified installer: utils.rano"
+    else
+        if ! {
+            # Try security-verified install (no unverified fallback; fail closed)
+            local install_success=false
+
+            if acfs_security_init; then
+                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+                # The grep ensures we specifically have an associative array, not just any variable
+                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
+                    local tool="rano"
+                    local url=""
+                    local expected_sha256=""
+
+                    # Safe access with explicit empty default
+                    url="${KNOWN_INSTALLERS[$tool]:-}"
+                    if ! expected_sha256="$(get_checksum "$tool")"; then
+                        log_error "utils.rano: get_checksum failed for tool '$tool'"
+                        expected_sha256=""
+                    fi
+
+                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                        if verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '-s'; then
+                            install_success=true
+                        else
+                            log_error "utils.rano: verify_checksum or installer execution failed"
+                        fi
+                    else
+                        if [[ -z "$url" ]]; then
+                            log_error "utils.rano: KNOWN_INSTALLERS[$tool] not found"
+                        fi
+                        if [[ -z "$expected_sha256" ]]; then
+                            log_error "utils.rano: checksum for '$tool' not found"
+                        fi
+                    fi
+                else
+                    log_error "utils.rano: KNOWN_INSTALLERS array not available"
+                fi
+            else
+                log_error "utils.rano: acfs_security_init failed - check security.sh and checksums.yaml"
+            fi
+
+            # Verified install is required - no fallback
+            if [[ "$install_success" = "true" ]]; then
+                true
+            else
+                log_error "Verified install failed for utils.rano"
+                false
+            fi
+        }; then
+            log_warn "utils.rano: verified installer failed"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.rano" "verified installer failed"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.rano"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: rano --help || rano --version (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_RANO'
+rano --help || rano --version
+INSTALL_UTILS_RANO
+        then
+            log_warn "utils.rano: verify failed: rano --help || rano --version"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.rano" "verify failed: rano --help || rano --version"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.rano"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "utils.rano installed"
+}
+
+# markdown_web_browser (mdwb) - Convert websites to Markdown for LLM consumption
+install_utils_mdwb() {
+    local module_id="utils.mdwb"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing utils.mdwb"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verified installer: utils.mdwb"
+    else
+        if ! {
+            # Try security-verified install (no unverified fallback; fail closed)
+            local install_success=false
+
+            if acfs_security_init; then
+                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+                # The grep ensures we specifically have an associative array, not just any variable
+                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
+                    local tool="mdwb"
+                    local url=""
+                    local expected_sha256=""
+
+                    # Safe access with explicit empty default
+                    url="${KNOWN_INSTALLERS[$tool]:-}"
+                    if ! expected_sha256="$(get_checksum "$tool")"; then
+                        log_error "utils.mdwb: get_checksum failed for tool '$tool'"
+                        expected_sha256=""
+                    fi
+
+                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                        if verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '-s'; then
+                            install_success=true
+                        else
+                            log_error "utils.mdwb: verify_checksum or installer execution failed"
+                        fi
+                    else
+                        if [[ -z "$url" ]]; then
+                            log_error "utils.mdwb: KNOWN_INSTALLERS[$tool] not found"
+                        fi
+                        if [[ -z "$expected_sha256" ]]; then
+                            log_error "utils.mdwb: checksum for '$tool' not found"
+                        fi
+                    fi
+                else
+                    log_error "utils.mdwb: KNOWN_INSTALLERS array not available"
+                fi
+            else
+                log_error "utils.mdwb: acfs_security_init failed - check security.sh and checksums.yaml"
+            fi
+
+            # Verified install is required - no fallback
+            if [[ "$install_success" = "true" ]]; then
+                true
+            else
+                log_error "Verified install failed for utils.mdwb"
+                false
+            fi
+        }; then
+            log_warn "utils.mdwb: verified installer failed"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.mdwb" "verified installer failed"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.mdwb"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: mdwb --help || mdwb --version (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_MDWB'
+mdwb --help || mdwb --version
+INSTALL_UTILS_MDWB
+        then
+            log_warn "utils.mdwb: verify failed: mdwb --help || mdwb --version"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.mdwb" "verify failed: mdwb --help || mdwb --version"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.mdwb"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "utils.mdwb installed"
+}
+
+# source_to_prompt_tui (s2p) - Code to LLM prompt generator with TUI
+install_utils_s2p() {
+    local module_id="utils.s2p"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing utils.s2p"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verified installer: utils.s2p"
+    else
+        if ! {
+            # Try security-verified install (no unverified fallback; fail closed)
+            local install_success=false
+
+            if acfs_security_init; then
+                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+                # The grep ensures we specifically have an associative array, not just any variable
+                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
+                    local tool="s2p"
+                    local url=""
+                    local expected_sha256=""
+
+                    # Safe access with explicit empty default
+                    url="${KNOWN_INSTALLERS[$tool]:-}"
+                    if ! expected_sha256="$(get_checksum "$tool")"; then
+                        log_error "utils.s2p: get_checksum failed for tool '$tool'"
+                        expected_sha256=""
+                    fi
+
+                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                        if verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '-s'; then
+                            install_success=true
+                        else
+                            log_error "utils.s2p: verify_checksum or installer execution failed"
+                        fi
+                    else
+                        if [[ -z "$url" ]]; then
+                            log_error "utils.s2p: KNOWN_INSTALLERS[$tool] not found"
+                        fi
+                        if [[ -z "$expected_sha256" ]]; then
+                            log_error "utils.s2p: checksum for '$tool' not found"
+                        fi
+                    fi
+                else
+                    log_error "utils.s2p: KNOWN_INSTALLERS array not available"
+                fi
+            else
+                log_error "utils.s2p: acfs_security_init failed - check security.sh and checksums.yaml"
+            fi
+
+            # Verified install is required - no fallback
+            if [[ "$install_success" = "true" ]]; then
+                true
+            else
+                log_error "Verified install failed for utils.s2p"
+                false
+            fi
+        }; then
+            log_warn "utils.s2p: verified installer failed"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.s2p" "verified installer failed"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.s2p"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: s2p --help || s2p --version (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_S2P'
+s2p --help || s2p --version
+INSTALL_UTILS_S2P
+        then
+            log_warn "utils.s2p: verify failed: s2p --help || s2p --version"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.s2p" "verify failed: s2p --help || s2p --version"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.s2p"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "utils.s2p installed"
+}
+
+# rust_proxy - Transparent proxy routing for debugging network traffic
+install_utils_rust_proxy() {
+    local module_id="utils.rust_proxy"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing utils.rust_proxy"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: install: # Build rust_proxy from source (no install.sh available) (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_RUST_PROXY'
+# Build rust_proxy from source (no install.sh available)
+TMPDIR="$(mktemp -d)"
+git clone --depth 1 https://github.com/Dicklesworthstone/rust_proxy.git "$TMPDIR/rust_proxy"
+cd "$TMPDIR/rust_proxy"
+cargo build --release
+cp target/release/rust_proxy ~/.cargo/bin/
+rm -rf "$TMPDIR"
+INSTALL_UTILS_RUST_PROXY
+        then
+            log_warn "utils.rust_proxy: install command failed: # Build rust_proxy from source (no install.sh available)"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.rust_proxy" "install command failed: # Build rust_proxy from source (no install.sh available)"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.rust_proxy"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: rust_proxy --help || rust_proxy --version (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_RUST_PROXY'
+rust_proxy --help || rust_proxy --version
+INSTALL_UTILS_RUST_PROXY
+        then
+            log_warn "utils.rust_proxy: verify failed: rust_proxy --help || rust_proxy --version"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.rust_proxy" "verify failed: rust_proxy --help || rust_proxy --version"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.rust_proxy"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "utils.rust_proxy installed"
+}
+
+# aadc - ASCII diagram corrector for fixing malformed ASCII art
+install_utils_aadc() {
+    local module_id="utils.aadc"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing utils.aadc"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: install: # Build aadc from source (no install.sh available) (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_AADC'
+# Build aadc from source (no install.sh available)
+TMPDIR="$(mktemp -d)"
+git clone --depth 1 https://github.com/Dicklesworthstone/aadc.git "$TMPDIR/aadc"
+cd "$TMPDIR/aadc"
+cargo build --release
+cp target/release/aadc ~/.cargo/bin/
+rm -rf "$TMPDIR"
+INSTALL_UTILS_AADC
+        then
+            log_warn "utils.aadc: install command failed: # Build aadc from source (no install.sh available)"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.aadc" "install command failed: # Build aadc from source (no install.sh available)"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.aadc"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: aadc --help || aadc --version (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_AADC'
+aadc --help || aadc --version
+INSTALL_UTILS_AADC
+        then
+            log_warn "utils.aadc: verify failed: aadc --help || aadc --version"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.aadc" "verify failed: aadc --help || aadc --version"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.aadc"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "utils.aadc installed"
+}
+
+# coding_agent_usage_tracker (caut) - LLM provider usage tracker
+install_utils_caut() {
+    local module_id="utils.caut"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing utils.caut"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: install: # Build caut from source (no install.sh available) (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_CAUT'
+# Build caut from source (no install.sh available)
+TMPDIR="$(mktemp -d)"
+git clone --depth 1 https://github.com/Dicklesworthstone/coding_agent_usage_tracker.git "$TMPDIR/caut"
+cd "$TMPDIR/caut"
+cargo build --release
+cp target/release/caut ~/.cargo/bin/
+rm -rf "$TMPDIR"
+INSTALL_UTILS_CAUT
+        then
+            log_warn "utils.caut: install command failed: # Build caut from source (no install.sh available)"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.caut" "install command failed: # Build caut from source (no install.sh available)"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.caut"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: caut --help || caut --version (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_CAUT'
+caut --help || caut --version
+INSTALL_UTILS_CAUT
+        then
+            log_warn "utils.caut: verify failed: caut --help || caut --version"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.caut" "verify failed: caut --help || caut --version"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.caut"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "utils.caut installed"
+}
+
 # Install all tools modules
 install_tools() {
     log_section "Installing tools modules"
@@ -728,6 +1230,13 @@ install_tools() {
     install_utils_giil
     install_utils_csctf
     install_utils_xf
+    install_utils_toon_rust
+    install_utils_rano
+    install_utils_mdwb
+    install_utils_s2p
+    install_utils_rust_proxy
+    install_utils_aadc
+    install_utils_caut
 }
 
 # Run if executed directly

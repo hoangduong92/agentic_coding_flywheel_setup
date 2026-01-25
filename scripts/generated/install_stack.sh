@@ -93,7 +93,7 @@ acfs_security_init() {
 }
 
 # Category: stack
-# Modules: 15
+# Modules: 19
 
 # Named tmux manager (agent cockpit)
 install_stack_ntm() {
@@ -233,7 +233,7 @@ install_stack_mcp_agent_mail() {
             run_as_target tmux kill-session -t "$tmux_session" 2>/dev/null || true
 
             # Create new detached tmux session and run the installer
-            if run_as_target tmux new-session -d -s "$tmux_session" 'bash' "$tmp_install" '--dir' "${TARGET_HOME:-/home/ubuntu}/mcp_agent_mail" '--yes'; then
+            if run_as_target tmux new-session -d -s "$tmux_session" 'bash' "$tmp_install" '--dir' '${TARGET_HOME:-/home/ubuntu}/mcp_agent_mail' '--yes'; then
                     log_success "stack.mcp_agent_mail installing in tmux session '$tmux_session'"
                     log_info "Attach with: tmux attach -t $tmux_session"
                     # Give it a moment to start
@@ -722,6 +722,94 @@ INSTALL_STACK_ULTIMATE_BUG_SCANNER
     fi
 
     log_success "stack.ultimate_bug_scanner installed"
+}
+
+# beads_rust (br) - Rust issue tracker with graph-aware dependencies
+install_stack_beads_rust() {
+    local module_id="stack.beads_rust"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing stack.beads_rust"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verified installer: stack.beads_rust"
+    else
+        if ! {
+            # Try security-verified install (no unverified fallback; fail closed)
+            local install_success=false
+
+            if acfs_security_init; then
+                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+                # The grep ensures we specifically have an associative array, not just any variable
+                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
+                    local tool="br"
+                    local url=""
+                    local expected_sha256=""
+
+                    # Safe access with explicit empty default
+                    url="${KNOWN_INSTALLERS[$tool]:-}"
+                    if ! expected_sha256="$(get_checksum "$tool")"; then
+                        log_error "stack.beads_rust: get_checksum failed for tool '$tool'"
+                        expected_sha256=""
+                    fi
+
+                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                        if verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '-s'; then
+                            install_success=true
+                        else
+                            log_error "stack.beads_rust: verify_checksum or installer execution failed"
+                        fi
+                    else
+                        if [[ -z "$url" ]]; then
+                            log_error "stack.beads_rust: KNOWN_INSTALLERS[$tool] not found"
+                        fi
+                        if [[ -z "$expected_sha256" ]]; then
+                            log_error "stack.beads_rust: checksum for '$tool' not found"
+                        fi
+                    fi
+                else
+                    log_error "stack.beads_rust: KNOWN_INSTALLERS array not available"
+                fi
+            else
+                log_error "stack.beads_rust: acfs_security_init failed - check security.sh and checksums.yaml"
+            fi
+
+            # Verified install is required - no fallback
+            if [[ "$install_success" = "true" ]]; then
+                true
+            else
+                log_error "Verified install failed for stack.beads_rust"
+                false
+            fi
+        }; then
+            log_error "stack.beads_rust: verified installer failed"
+            return 1
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: br --version (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_STACK_BEADS_RUST'
+br --version
+INSTALL_STACK_BEADS_RUST
+        then
+            log_error "stack.beads_rust: verify failed: br --version"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify (optional): br list --json 2>/dev/null (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_STACK_BEADS_RUST'
+br list --json 2>/dev/null
+INSTALL_STACK_BEADS_RUST
+        then
+            log_warn "Optional verify failed: stack.beads_rust"
+        fi
+    fi
+
+    log_success "stack.beads_rust installed"
 }
 
 # bv TUI for Beads tasks
@@ -1277,6 +1365,231 @@ INSTALL_STACK_RU
     log_success "stack.ru installed"
 }
 
+# Brenner Bot - research session manager with hypothesis tracking
+install_stack_brenner_bot() {
+    local module_id="stack.brenner_bot"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing stack.brenner_bot"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verified installer: stack.brenner_bot"
+    else
+        if ! {
+            # Try security-verified install (no unverified fallback; fail closed)
+            local install_success=false
+
+            if acfs_security_init; then
+                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+                # The grep ensures we specifically have an associative array, not just any variable
+                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
+                    local tool="brenner_bot"
+                    local url=""
+                    local expected_sha256=""
+
+                    # Safe access with explicit empty default
+                    url="${KNOWN_INSTALLERS[$tool]:-}"
+                    if ! expected_sha256="$(get_checksum "$tool")"; then
+                        log_error "stack.brenner_bot: get_checksum failed for tool '$tool'"
+                        expected_sha256=""
+                    fi
+
+                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                        if verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '-s'; then
+                            install_success=true
+                        else
+                            log_error "stack.brenner_bot: verify_checksum or installer execution failed"
+                        fi
+                    else
+                        if [[ -z "$url" ]]; then
+                            log_error "stack.brenner_bot: KNOWN_INSTALLERS[$tool] not found"
+                        fi
+                        if [[ -z "$expected_sha256" ]]; then
+                            log_error "stack.brenner_bot: checksum for '$tool' not found"
+                        fi
+                    fi
+                else
+                    log_error "stack.brenner_bot: KNOWN_INSTALLERS array not available"
+                fi
+            else
+                log_error "stack.brenner_bot: acfs_security_init failed - check security.sh and checksums.yaml"
+            fi
+
+            # Verified install is required - no fallback
+            if [[ "$install_success" = "true" ]]; then
+                true
+            else
+                log_error "Verified install failed for stack.brenner_bot"
+                false
+            fi
+        }; then
+            log_warn "stack.brenner_bot: verified installer failed"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "stack.brenner_bot" "verified installer failed"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "stack.brenner_bot"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: brenner --version || brenner --help (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_STACK_BRENNER_BOT'
+brenner --version || brenner --help
+INSTALL_STACK_BRENNER_BOT
+        then
+            log_warn "stack.brenner_bot: verify failed: brenner --version || brenner --help"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "stack.brenner_bot" "verify failed: brenner --version || brenner --help"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "stack.brenner_bot"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "stack.brenner_bot installed"
+}
+
+# Remote Compilation Helper - transparent build offloading for AI coding agents
+install_stack_rch() {
+    local module_id="stack.rch"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing stack.rch"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verified installer: stack.rch"
+    else
+        if ! {
+            # Try security-verified install (no unverified fallback; fail closed)
+            local install_success=false
+
+            if acfs_security_init; then
+                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+                # The grep ensures we specifically have an associative array, not just any variable
+                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
+                    local tool="rch"
+                    local url=""
+                    local expected_sha256=""
+
+                    # Safe access with explicit empty default
+                    url="${KNOWN_INSTALLERS[$tool]:-}"
+                    if ! expected_sha256="$(get_checksum "$tool")"; then
+                        log_error "stack.rch: get_checksum failed for tool '$tool'"
+                        expected_sha256=""
+                    fi
+
+                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                        if verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '-s'; then
+                            install_success=true
+                        else
+                            log_error "stack.rch: verify_checksum or installer execution failed"
+                        fi
+                    else
+                        if [[ -z "$url" ]]; then
+                            log_error "stack.rch: KNOWN_INSTALLERS[$tool] not found"
+                        fi
+                        if [[ -z "$expected_sha256" ]]; then
+                            log_error "stack.rch: checksum for '$tool' not found"
+                        fi
+                    fi
+                else
+                    log_error "stack.rch: KNOWN_INSTALLERS array not available"
+                fi
+            else
+                log_error "stack.rch: acfs_security_init failed - check security.sh and checksums.yaml"
+            fi
+
+            # Verified install is required - no fallback
+            if [[ "$install_success" = "true" ]]; then
+                true
+            else
+                log_error "Verified install failed for stack.rch"
+                false
+            fi
+        }; then
+            log_warn "stack.rch: verified installer failed"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "stack.rch" "verified installer failed"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "stack.rch"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: rch --version || rch --help (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_STACK_RCH'
+rch --version || rch --help
+INSTALL_STACK_RCH
+        then
+            log_warn "stack.rch: verify failed: rch --version || rch --help"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "stack.rch" "verify failed: rch --version || rch --help"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "stack.rch"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "stack.rch installed"
+}
+
+# WezTerm Automata (wa) - terminal automation and orchestration for AI agents
+install_stack_wezterm_automata() {
+    local module_id="stack.wezterm_automata"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing stack.wezterm_automata"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: install: WA_TMP=\"\$(mktemp -d \"\${TMPDIR:-/tmp}/wa_build.XXXXXX\")\" (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_STACK_WEZTERM_AUTOMATA'
+WA_TMP="$(mktemp -d "${TMPDIR:-/tmp}/wa_build.XXXXXX")"
+cd "$WA_TMP"
+git clone --depth 1 https://github.com/Dicklesworthstone/wezterm_automata.git .
+cargo build --release -p wa
+cp target/release/wa ~/.cargo/bin/
+rm -rf "$WA_TMP"
+INSTALL_STACK_WEZTERM_AUTOMATA
+        then
+            log_warn "stack.wezterm_automata: install command failed: WA_TMP=\"\$(mktemp -d \"\${TMPDIR:-/tmp}/wa_build.XXXXXX\")\""
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "stack.wezterm_automata" "install command failed: WA_TMP=\"\$(mktemp -d \"\${TMPDIR:-/tmp}/wa_build.XXXXXX\")\""
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "stack.wezterm_automata"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: wa --version || wa --help (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_STACK_WEZTERM_AUTOMATA'
+wa --version || wa --help
+INSTALL_STACK_WEZTERM_AUTOMATA
+        then
+            log_warn "stack.wezterm_automata: verify failed: wa --version || wa --help"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "stack.wezterm_automata" "verify failed: wa --version || wa --help"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "stack.wezterm_automata"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "stack.wezterm_automata installed"
+}
+
 # System Resource Protection Script - ananicy-cpp rules + TUI monitor for responsive dev workstations
 install_stack_srps() {
     local module_id="stack.srps"
@@ -1391,6 +1704,7 @@ install_stack() {
     install_stack_jeffreysprompts
     install_stack_process_triage
     install_stack_ultimate_bug_scanner
+    install_stack_beads_rust
     install_stack_beads_viewer
     install_stack_cass
     install_stack_cm
@@ -1398,6 +1712,9 @@ install_stack() {
     install_stack_slb
     install_stack_dcg
     install_stack_ru
+    install_stack_brenner_bot
+    install_stack_rch
+    install_stack_wezterm_automata
     install_stack_srps
 }
 

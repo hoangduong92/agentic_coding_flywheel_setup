@@ -82,6 +82,18 @@ installers:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/repo_updater/main/install.sh"
     sha256: "4af6f6fc31979c775553fdb50da73f34395762eca8c769dea9ab6de77535dc94"
 
+  br:
+    url: "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh"
+    sha256: "2351e3dacac264eee5c3b06f62bda750be4f45d95b3df6444127bb4323e6e19e"
+
+  rch:
+    url: "https://raw.githubusercontent.com/Dicklesworthstone/remote_compilation_helper/master/install.sh"
+    sha256: "17e26ee99b3c5efc98019b7617a3be5bfa73b2bc11e4b206756e6d504ab42d25"
+
+  brenner_bot:
+    url: "https://raw.githubusercontent.com/Dicklesworthstone/brenner_bot/main/install.sh"
+    sha256: "171bec954d454e1e01035560376be9ee94552dcb3d1225798b2a66aa890db7bb"
+
   nvm:
     url: "https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh"
     sha256: "abdb525ee9f5b48b34d8ed9fc67c6013fb0f659712e401ecd88ab989b3af8f53"
@@ -105,4 +117,20 @@ installers:
   ohmyzsh:
     url: "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
     sha256: "ce0b7c94aa04d8c7a8137e45fe5c4744e3947871f785fd58117c480c1bf49352"
+
+  tru:
+    url: "https://raw.githubusercontent.com/Dicklesworthstone/toon_rust/master/install.sh"
+    sha256: "4996301850402a0e18eb4f0f501e42c32b4871cb7f745e53aaec356180ac4989"
+
+  rano:
+    url: "https://raw.githubusercontent.com/Dicklesworthstone/rano/main/install.sh"
+    sha256: "696a4e60d39a3b11a822e529e59da36ff99b9201297a15c5ae9803f94d5f4cac"
+
+  mdwb:
+    url: "https://raw.githubusercontent.com/Dicklesworthstone/markdown_web_browser/main/install.sh"
+    sha256: "bb7dbf762dd5333c42d0f255e3b90e39724775d3eb7862e3df4801d2b84eb460"
+
+  s2p:
+    url: "https://raw.githubusercontent.com/Dicklesworthstone/source_to_prompt_tui/main/install.sh"
+    sha256: "5b563a0e84277ac81837611bf126c1d4f015055de17330a75670ccc7258d57eb"
 

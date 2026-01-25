@@ -35,20 +35,24 @@ export function BeadsLesson() {
 
       {/* What Is Beads */}
       <Section
-        title="What Is Beads?"
+        title="What Is beads_rust (br)?"
         icon={<ListTodo className="h-5 w-5" />}
         delay={0.1}
       >
         <Paragraph>
-          <Highlight>Beads</Highlight> is a graph-aware issue tracking system
+          <Highlight>beads_rust</Highlight> (<code>br</code>) is a graph-aware issue tracking system
           designed for agent workflows. It tracks dependencies between tasks
           and uses graph algorithms to tell you what to work on next.
         </Paragraph>
         <Paragraph>
           <Highlight>BV (Beads Viewer)</Highlight> is the TUI and CLI for
-          working with Beads. It provides both interactive views and
+          working with beads. It provides both interactive views and
           machine-readable outputs for agents.
         </Paragraph>
+        <TipBox variant="info">
+          The <code>bd</code> command is an alias for <code>br</code> for backward compatibility.
+          Both commands work identically.
+        </TipBox>
 
         <div className="mt-8">
           <FeatureGrid>
@@ -84,47 +88,47 @@ export function BeadsLesson() {
 
       {/* Core Commands */}
       <Section
-        title="Core bd Commands"
+        title="Core br Commands"
         icon={<Terminal className="h-5 w-5" />}
         delay={0.15}
       >
         <Paragraph>
-          <code>bd</code> is the CLI for managing Beads issues:
+          <code>br</code> is the CLI for managing beads issues:
         </Paragraph>
 
         <div className="mt-6">
           <CommandList
             commands={[
               {
-                command: "bd ready",
+                command: "br ready",
                 description: "Show issues ready to work (no blockers)",
               },
               {
-                command: "bd list --status=open",
+                command: "br list --status=open",
                 description: "All open issues",
               },
               {
-                command: "bd show <id>",
+                command: "br show <id>",
                 description: "Detailed view with dependencies",
               },
               {
-                command: 'bd create "..." -t task -p 2',
+                command: 'br create "..." -t task -p 2',
                 description: "Create a new issue",
               },
               {
-                command: "bd update <id> --status=in_progress",
+                command: "br update <id> --status=in_progress",
                 description: "Claim work",
               },
               {
-                command: "bd close <id>",
+                command: "br close <id>",
                 description: "Mark complete",
               },
               {
-                command: "bd dep add <issue> <depends-on>",
+                command: "br dep add <issue> <depends-on>",
                 description: "Add a dependency",
               },
               {
-                command: "bd sync",
+                command: "br sync",
                 description: "Sync with git remote",
               },
             ]}
@@ -272,11 +276,11 @@ export function BeadsLesson() {
       >
         <div className="space-y-4">
           <BestPractice
-            title="Start with bd ready"
+            title="Start with br ready"
             description="Find work that has no blockers—you can start immediately"
           />
           <BestPractice
-            title="Use bd dep add for dependencies"
+            title="Use br dep add for dependencies"
             description="Explicit dependencies enable smart prioritization"
           />
           <BestPractice
@@ -288,7 +292,7 @@ export function BeadsLesson() {
             description="Unblocks dependent work faster"
           />
           <BestPractice
-            title="Run bd sync at session end"
+            title="Run br sync at session end"
             description="Keeps .beads/ in sync across agents and machines"
           />
         </div>
@@ -311,19 +315,19 @@ export function BeadsLesson() {
       >
         <CodeBlock
           code={`# See what's ready to work on
-$ bd ready
+$ br ready
 
 # Get smart triage recommendations
 $ bv --robot-triage | jq '.quick_ref'
 
 # Create a task
-$ bd create "Add login page" -t feature -p 2
+$ br create "Add login page" -t feature -p 2
 
 # Start working on it
-$ bd update bd-1 --status=in_progress
+$ br update bd-1 --status=in_progress
 
 # Sync when done
-$ bd sync`}
+$ br sync`}
           showLineNumbers
         />
       </Section>
@@ -432,12 +436,12 @@ function RobotCommand({
 // =============================================================================
 function AgentWorkflow() {
   const steps = [
-    { icon: <Target className="h-5 w-5" />, title: "bd ready", desc: "Find unblocked work" },
-    { icon: <ListTodo className="h-5 w-5" />, title: "bd show <id>", desc: "Review issue details" },
-    { icon: <Play className="h-5 w-5" />, title: "bd update --status=in_progress", desc: "Claim the work" },
+    { icon: <Target className="h-5 w-5" />, title: "br ready", desc: "Find unblocked work" },
+    { icon: <ListTodo className="h-5 w-5" />, title: "br show <id>", desc: "Review issue details" },
+    { icon: <Play className="h-5 w-5" />, title: "br update --status=in_progress", desc: "Claim the work" },
     { icon: <Zap className="h-5 w-5" />, title: "Implement + test", desc: "Do the actual work" },
-    { icon: <CheckCircle className="h-5 w-5" />, title: "bd close <id>", desc: "Mark complete" },
-    { icon: <GitBranch className="h-5 w-5" />, title: "bd sync", desc: "Sync with remote" },
+    { icon: <CheckCircle className="h-5 w-5" />, title: "br close <id>", desc: "Mark complete" },
+    { icon: <GitBranch className="h-5 w-5" />, title: "br sync", desc: "Sync with remote" },
   ];
 
   return (

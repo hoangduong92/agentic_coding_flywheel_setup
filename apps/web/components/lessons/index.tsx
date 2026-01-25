@@ -28,6 +28,7 @@ import { JfpLesson } from "./jfp-lesson";
 import { PtLesson } from "./pt-lesson";
 import { XfLesson } from "./xf-lesson";
 import { SrpsLesson } from "./srps-lesson";
+import { RchLesson } from "./rch-lesson";
 
 // Render the lesson content for a given slug.
 // This intentionally uses a static switch so ESLint can guarantee components are not created during render.
@@ -89,6 +90,8 @@ export function renderLessonComponent(slug: string): React.ReactNode | null {
       return <XfLesson />;
     case "srps":
       return <SrpsLesson />;
+    case "rch":
+      return <RchLesson />;
     default:
       return null;
   }
@@ -124,4 +127,5 @@ export {
   PtLesson,
   XfLesson,
   SrpsLesson,
+  RchLesson,
 };
