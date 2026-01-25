@@ -621,6 +621,52 @@ export const tldrFlywheelTools: TldrFlywheelTool[] = [
       "Distributing builds across powerful remote servers",
     ],
   },
+  {
+    id: "wa",
+    name: "WezTerm Automata",
+    shortName: "WA",
+    href: "https://github.com/Dicklesworthstone/wezterm_automata",
+    icon: "Monitor",
+    color: "from-cyan-500 to-teal-600",
+    category: "core",
+    stars: 42,
+    whatItDoes:
+      "Terminal hypervisor that captures pane output in real-time, detects agent state transitions through pattern matching, and enables event-driven automation across multiple AI coding agents.",
+    whyItsUseful:
+      "When running multiple AI agents in WezTerm, you need to know when they hit rate limits, complete tasks, or need approval. WA observes all panes with sub-50ms latency and triggers automated responses.",
+    implementationHighlights: [
+      "Real-time delta extraction (sub-50ms latency)",
+      "Multi-agent pattern detection engine",
+      "FTS5-powered full-text search with BM25 ranking",
+      "Safety policy engine with capability gates",
+    ],
+    synergies: [
+      {
+        toolId: "ntm",
+        description: "WA observes agents spawned by NTM",
+      },
+      {
+        toolId: "mail",
+        description: "State changes trigger Agent Mail notifications",
+      },
+      {
+        toolId: "bv",
+        description: "Task completions can update bead status",
+      },
+    ],
+    techStack: ["Rust", "WezTerm API", "SQLite FTS5", "Pattern matching"],
+    keyFeatures: [
+      "Real-time terminal observation",
+      "Intelligent pattern detection",
+      "Robot Mode JSON API",
+      "Event-driven automation",
+    ],
+    useCases: [
+      "Detecting agent rate limits and errors",
+      "Coordinating multi-agent workflows",
+      "Searching across captured terminal sessions",
+    ],
+  },
   // ===========================================================================
   // SUPPORTING FLYWHEEL TOOLS
   // ===========================================================================
