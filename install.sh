@@ -3830,7 +3830,8 @@ finalize() {
 
     # Reload tmux config if server is running (fixes #66: prefix key works immediately)
     # This handles the case where tmux started in an earlier phase before config was deployed
-    run_as_target tmux source-file ~/.tmux.conf 2>/dev/null || true
+    # Note: Use $TARGET_HOME, not ~, since ~ expands to the installer's user (often root)
+    run_as_target tmux source-file "$TARGET_HOME/.tmux.conf" 2>/dev/null || true
 
     # Install onboard lessons + command
     log_detail "Installing onboard lessons"
