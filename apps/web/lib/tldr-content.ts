@@ -713,6 +713,52 @@ export const tldrFlywheelTools: TldrFlywheelTool[] = [
       "Scientific methodology workflows",
     ],
   },
+  {
+    id: "ms",
+    name: "Meta Skill",
+    shortName: "MS",
+    href: "https://github.com/Dicklesworthstone/meta_skill",
+    icon: "BookMarked",
+    color: "from-indigo-500 to-blue-600",
+    category: "core",
+    stars: 35,
+    whatItDoes:
+      "Local-first skill management platform that turns operational knowledge into structured, searchable, reusable artifacts. Provides dual persistence (SQLite + Git), hybrid search, and native AI agent integration via MCP.",
+    whyItsUseful:
+      "As you build expertise across codebases, you need a way to capture and reuse successful patterns. MS indexes SKILL.md files, provides context-aware suggestions with bandit optimization, and exposes skills as native tools for AI agents.",
+    implementationHighlights: [
+      "Dual SQLite + Git persistence for speed and audit trails",
+      "Hybrid BM25 + hash embeddings with Reciprocal Rank Fusion",
+      "UCB bandit algorithm for adaptive suggestions",
+      "MCP server exposing skills as native AI tools",
+    ],
+    synergies: [
+      {
+        toolId: "cm",
+        description: "CM stores playbook rules that MS can query",
+      },
+      {
+        toolId: "cass",
+        description: "Skills can be mined from CASS session history",
+      },
+      {
+        toolId: "bv",
+        description: "Graph analysis via bv for dependency insights",
+      },
+    ],
+    techStack: ["Rust", "SQLite", "Git", "MCP", "Hash Embeddings"],
+    keyFeatures: [
+      "Skill indexing and semantic search",
+      "Context-aware adaptive suggestions",
+      "Multi-machine Git-based sync",
+      "MCP integration for AI agents",
+    ],
+    useCases: [
+      "Capturing operational knowledge as reusable skills",
+      "AI agent augmentation via MCP tools",
+      "Cross-project pattern distribution",
+    ],
+  },
   // ===========================================================================
   // SUPPORTING FLYWHEEL TOOLS
   // ===========================================================================
