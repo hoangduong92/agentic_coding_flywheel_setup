@@ -20,6 +20,10 @@
 #   --reset-state     Move state file aside and exit (for debugging)
 #   --interactive     Enable interactive prompts for resume decisions
 #   --skip-preflight  Skip pre-flight system validation
+#   --auto-fix        Enable auto-fix for pre-flight issues (prompt mode, default)
+#   --no-auto-fix     Disable auto-fix (only warn about issues)
+#   --auto-fix-accept-all  Auto-fix all issues without prompting (for CI)
+#   --auto-fix-dry-run     Show what auto-fix would do without executing
 #   --skip-ubuntu-upgrade  Skip automatic Ubuntu version upgrade
 #   --target-ubuntu=VER    Set target Ubuntu version (default: 25.10)
 #   --strict          Treat ALL tools as critical (any checksum mismatch aborts)
@@ -90,6 +94,7 @@ export PATH="$HOME/.local/bin:$PATH"
 YES_MODE=false
 DRY_RUN=false
 PRINT_MODE=false
+PIN_REF_MODE=false
 MODE="vibe"
 SKIP_POSTGRES=false
 SKIP_VAULT=false
@@ -113,6 +118,11 @@ RESET_STATE_ONLY=false
 
 # Preflight options
 SKIP_PREFLIGHT=false
+
+# Auto-fix options (bd-19y9.3.4)
+# Modes: "prompt" (default, interactive), "yes" (accept all), "no" (disable), "dry-run" (preview only)
+AUTO_FIX_MODE="prompt"
+export AUTO_FIX_MODE
 
 # Ubuntu upgrade options (nb4: integrate upgrade phase)
 SKIP_UBUNTU_UPGRADE=false
@@ -466,6 +476,63 @@ ${commit_line}
 }
 
 # ============================================================
+# Pinned Ref Output (bd-31ps.8.1)
+# Prints resolved SHA and copy-pasteable pinned command
+# ============================================================
+print_pinned_ref() {
+    local sha="${ACFS_COMMIT_SHA_FULL:-$ACFS_COMMIT_SHA}"
+
+    if [[ -z "$sha" || "$sha" == "(unknown)" || "$sha" == "(curl not available)" ]]; then
+        echo "Error: Could not resolve ref '$ACFS_REF' to SHA" >&2
+        echo "" >&2
+        echo "Possible causes:" >&2
+        echo "  - Invalid ref (branch, tag, or SHA)" >&2
+        echo "  - GitHub API rate limit or network issue" >&2
+        echo "" >&2
+        echo "Try:" >&2
+        echo "  export ACFS_REF=main  # use main branch" >&2
+        echo "  export ACFS_REF=v1.0  # use a tag" >&2
+        exit 1
+    fi
+
+    local short_sha="${sha:0:12}"
+    local install_url="https://raw.githubusercontent.com/${ACFS_REPO_OWNER}/${ACFS_REPO_NAME}/${sha}/install.sh"
+
+    echo ""
+    echo "═════════════════════════════════════════════════════════════════"
+    echo "                    ACFS Pinned Reference"
+    echo "═════════════════════════════════════════════════════════════════"
+    echo ""
+    echo "  Requested ref:  ${ACFS_REF_INPUT:-$ACFS_REF}"
+    echo "  Resolved SHA:   ${short_sha}"
+    if [[ -n "${ACFS_COMMIT_SHA_FULL:-}" ]]; then
+        echo "  Full SHA:       ${ACFS_COMMIT_SHA_FULL}"
+    fi
+    if [[ -n "${ACFS_COMMIT_DATE:-}" ]]; then
+        echo "  Commit date:    ${ACFS_COMMIT_DATE}"
+    fi
+    if [[ -n "${ACFS_COMMIT_AGE:-}" ]]; then
+        echo "  Commit age:     ${ACFS_COMMIT_AGE}"
+    fi
+    echo ""
+    echo "─────────────────────────────────────────────────────────────────"
+    echo "Copy-paste this command to install from this exact commit:"
+    echo ""
+    echo "  curl -fsSL \"${install_url}\" | ACFS_REF=\"${sha}\" bash -s -- --yes --mode vibe"
+    echo ""
+    echo "Or with environment variable:"
+    echo ""
+    echo "  export ACFS_REF=\"${sha}\""
+    echo "  curl -fsSL \"https://agent-flywheel.com/install\" | bash -s -- --yes --mode vibe"
+    echo ""
+    echo "─────────────────────────────────────────────────────────────────"
+    echo ""
+    echo "Tip: Pinned refs ensure reproducible installs across machines."
+    echo "     Use tags (e.g., v1.0.0) for stable releases."
+    echo ""
+}
+
+# ============================================================
 # Logging functions (with gum enhancement)
 # ============================================================
 log_step() {
@@ -641,12 +708,19 @@ acfs_summary_emit() {
             [$completed[] | {id: ., duration_seconds: ($durations[.] // null)}]
         ' "$ACFS_STATE_FILE" 2>/dev/null) || phases_json="[]"
 
-        # Build failure object if present
-        failure_json=$(jq -r '
-            if .failed_phase != null then
-                {phase: .failed_phase, step: .failed_step, error: .failed_error, resume_hint: "--resume"}
-            else null end
-        ' "$ACFS_STATE_FILE" 2>/dev/null) || failure_json="null"
+        # Build failure object if present with precise resume hint (bd-31ps.9.1)
+        local failed_phase
+        failed_phase=$(jq -r '.failed_phase // empty' "$ACFS_STATE_FILE" 2>/dev/null) || true
+        if [[ -n "$failed_phase" ]]; then
+            local resume_hint
+            resume_hint=$(generate_resume_hint "$failed_phase" "")
+            failure_json=$(jq -n \
+                --arg phase "$failed_phase" \
+                --arg step "$(jq -r '.failed_step // empty' "$ACFS_STATE_FILE" 2>/dev/null)" \
+                --arg error "$(jq -r '.failed_error // empty' "$ACFS_STATE_FILE" 2>/dev/null)" \
+                --arg resume_hint "$resume_hint" \
+                '{phase: $phase, step: (if $step == "" then null else $step end), error: (if $error == "" then null else $error end), resume_hint: $resume_hint}')
+        fi
     fi
 
     # Get Ubuntu version
@@ -695,6 +769,94 @@ acfs_summary_emit() {
 }
 
 # ============================================================
+# Resume Hint Generation (bd-31ps.9.1)
+# ============================================================
+# Generates a precise, copyable command to resume installation from failure.
+# Includes all relevant flags to reproduce the original invocation.
+generate_resume_hint() {
+    local failed_phase="${1:-}"
+    local failed_step="${2:-}"
+
+    # Start with base command
+    local cmd=""
+
+    # Prefer curl|bash one-liner for curl invocations; local script for local runs
+    if [[ -z "${SCRIPT_DIR:-}" ]]; then
+        # curl|bash invocation - use one-liner format
+        cmd="curl -sSL"
+        if [[ -n "${ACFS_COMMIT_SHA_FULL:-}" ]]; then
+            # Pin to exact commit SHA for reproducibility
+            cmd="$cmd https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/${ACFS_COMMIT_SHA_FULL}/install.sh"
+        elif [[ -n "${ACFS_REF_INPUT:-}" && "${ACFS_REF_INPUT}" != "main" ]]; then
+            cmd="$cmd https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/${ACFS_REF_INPUT}/install.sh"
+        else
+            cmd="$cmd https://acfs.sh"
+        fi
+        cmd="$cmd | bash -s --"
+    else
+        # Local script invocation
+        cmd="bash install.sh"
+    fi
+
+    # Always add --resume flag (skips completed phases via state.json)
+    cmd="$cmd --resume"
+
+    # Add mode if not default
+    if [[ "${MODE:-vibe}" != "vibe" ]]; then
+        cmd="$cmd --mode $MODE"
+    fi
+
+    # Add skip flags that were used
+    [[ "${SKIP_POSTGRES:-false}" == "true" ]] && cmd="$cmd --skip-postgres"
+    [[ "${SKIP_VAULT:-false}" == "true" ]] && cmd="$cmd --skip-vault"
+    [[ "${SKIP_CLOUD:-false}" == "true" ]] && cmd="$cmd --skip-cloud"
+    [[ "${SKIP_PREFLIGHT:-false}" == "true" ]] && cmd="$cmd --skip-preflight"
+    [[ "${SKIP_UBUNTU_UPGRADE:-false}" == "true" ]] && cmd="$cmd --skip-ubuntu-upgrade"
+
+    # Add --yes if original run was non-interactive
+    [[ "${YES_MODE:-false}" == "true" ]] && cmd="$cmd --yes"
+
+    # Add --strict if it was set
+    [[ "${STRICT_MODE:-false}" == "true" ]] && cmd="$cmd --strict"
+
+    echo "$cmd"
+}
+
+# Print the resume hint with explanation and copyable block
+print_resume_hint() {
+    local failed_phase="${1:-}"
+    local failed_step="${2:-}"
+    local resume_cmd
+    resume_cmd=$(generate_resume_hint "$failed_phase" "$failed_step")
+
+    log_info ""
+    log_info "╔══════════════════════════════════════════════════════════════╗"
+    log_info "║  To resume installation from this point:                     ║"
+    log_info "╚══════════════════════════════════════════════════════════════╝"
+    log_info ""
+    log_info "  $resume_cmd"
+    log_info ""
+
+    if [[ -n "$failed_phase" ]]; then
+        log_detail "Failed phase: $failed_phase"
+    fi
+    if [[ -n "$failed_step" ]]; then
+        log_detail "Failed step: $failed_step"
+    fi
+
+    # Also update the summary JSON with the precise resume hint
+    if [[ -f "${ACFS_STATE_FILE:-}" ]] && command -v jq &>/dev/null; then
+        local tmp_state
+        tmp_state=$(mktemp)
+        if jq --arg hint "$resume_cmd" '.resume_hint = $hint' "$ACFS_STATE_FILE" > "$tmp_state" 2>/dev/null; then
+            mv "$tmp_state" "$ACFS_STATE_FILE"
+        else
+            rm -f "$tmp_state"
+        fi
+    fi
+}
+
+# ============================================================
 # Error handling
 # ============================================================
 cleanup() {
@@ -715,7 +877,16 @@ cleanup() {
         fi
         log_error "  2. If installed, run: acfs doctor (try as $TARGET_USER)"
         log_error "     (If you ran the installer as root: sudo -u $TARGET_USER -i bash -lc 'acfs doctor')"
-        log_error "  3. Re-run this installer (it's safe to run multiple times)"
+        log_error ""
+        # Print precise resume hint if available (bd-31ps.9.1)
+        # Get failed phase from state if available
+        local failed_phase=""
+        local failed_step=""
+        if [[ -f "${ACFS_STATE_FILE:-}" ]] && command -v jq &>/dev/null; then
+            failed_phase=$(jq -r '.failed_phase // empty' "$ACFS_STATE_FILE" 2>/dev/null) || true
+            failed_step=$(jq -r '.failed_step // empty' "$ACFS_STATE_FILE" 2>/dev/null) || true
+        fi
+        print_resume_hint "$failed_phase" "$failed_step"
         log_error ""
         # Emit failure summary (best-effort)
         acfs_summary_emit "failure" 0 2>/dev/null || true
@@ -794,6 +965,26 @@ parse_args() {
                 SKIP_PREFLIGHT=true
                 shift
                 ;;
+            --auto-fix)
+                # Enable auto-fix with prompts (default for interactive)
+                AUTO_FIX_MODE="prompt"
+                shift
+                ;;
+            --no-auto-fix)
+                # Disable auto-fix entirely - only show warnings
+                AUTO_FIX_MODE="no"
+                shift
+                ;;
+            --auto-fix-accept-all)
+                # Non-interactive: fix all issues without prompting
+                AUTO_FIX_MODE="yes"
+                shift
+                ;;
+            --auto-fix-dry-run)
+                # Show what auto-fix would do without executing
+                AUTO_FIX_MODE="dry-run"
+                shift
+                ;;
             --checksums-ref|--checksums-ref=*)
                 if [[ "$1" == "--checksums-ref" ]]; then
                     if [[ -z "${2:-}" ]]; then
@@ -807,6 +998,11 @@ parse_args() {
                 fi
                 ACFS_CHECKSUMS_RAW="https://raw.githubusercontent.com/${ACFS_REPO_OWNER}/${ACFS_REPO_NAME}/${ACFS_CHECKSUMS_REF}"
                 export ACFS_CHECKSUMS_REF ACFS_CHECKSUMS_RAW
+                ;;
+            --pin-ref|--confirm-ref)
+                # Print resolved SHA and pinned command, then exit
+                PIN_REF_MODE=true
+                shift
                 ;;
             --skip-ubuntu-upgrade)
                 # Skip automatic Ubuntu version upgrade (nb4)
@@ -881,6 +1077,103 @@ parse_args() {
 command_exists() {
     command -v "$1" &>/dev/null
 }
+
+# ============================================================
+# Auto-Fix Handler (bd-19y9.3.4)
+# Dispatches auto-fix actions based on AUTO_FIX_MODE
+# ============================================================
+#
+# Usage: handle_autofix <fix_name> <description> <fix_function>
+#   fix_name     - Short identifier (e.g., "unattended_upgrades")
+#   description  - Human-readable description of the issue
+#   fix_function - Function to call for fixing (receives "fix" or "dry-run" as $1)
+#
+# Returns:
+#   0 - Issue was fixed (or dry-run shown)
+#   1 - User declined to fix or auto-fix is disabled
+#   2 - Fix function failed
+#
+handle_autofix() {
+    local fix_name="$1"
+    local description="$2"
+    local fix_function="$3"
+
+    case "${AUTO_FIX_MODE:-prompt}" in
+        "no")
+            # Just warn, don't fix
+            log_warn "[PRE-FLIGHT] $description"
+            log_warn "[PRE-FLIGHT] Use --auto-fix to resolve automatically"
+            return 1
+            ;;
+        "dry-run")
+            # Show what would be done
+            log_info "[DRY-RUN] Would auto-fix: $description"
+            if type -t "$fix_function" &>/dev/null; then
+                "$fix_function" "dry-run" || true
+            fi
+            return 0
+            ;;
+        "yes")
+            # Fix automatically without prompting
+            log_info "[AUTO-FIX] Fixing: $description"
+            if type -t "$fix_function" &>/dev/null; then
+                if "$fix_function" "fix"; then
+                    log_success "[AUTO-FIX] Fixed: $fix_name"
+                    return 0
+                else
+                    log_error "[AUTO-FIX] Failed to fix: $fix_name"
+                    return 2
+                fi
+            else
+                log_error "[AUTO-FIX] Fix function not found: $fix_function"
+                return 2
+            fi
+            ;;
+        "prompt"|*)
+            # Interactive: ask user before fixing
+            log_warn "[PRE-FLIGHT] $description"
+            if [[ "${YES_MODE:-false}" == "true" ]]; then
+                # In --yes mode, default to accepting auto-fix
+                log_info "[AUTO-FIX] Fixing (--yes mode): $description"
+                if type -t "$fix_function" &>/dev/null; then
+                    if "$fix_function" "fix"; then
+                        log_success "[AUTO-FIX] Fixed: $fix_name"
+                        return 0
+                    else
+                        log_error "[AUTO-FIX] Failed to fix: $fix_name"
+                        return 2
+                    fi
+                fi
+            else
+                # Interactive prompt
+                local response=""
+                printf "%b" "${ACFS_YELLOW:-}Would you like ACFS to fix this automatically? [Y/n] ${ACFS_NC:-}" >&2
+                read -r response </dev/tty 2>/dev/null || response="y"
+                case "${response:-y}" in
+                    [Yy]|[Yy][Ee][Ss]|"")
+                        log_info "[AUTO-FIX] Fixing: $description"
+                        if type -t "$fix_function" &>/dev/null; then
+                            if "$fix_function" "fix"; then
+                                log_success "[AUTO-FIX] Fixed: $fix_name"
+                                return 0
+                            else
+                                log_error "[AUTO-FIX] Failed to fix: $fix_name"
+                                return 2
+                            fi
+                        fi
+                        ;;
+                    *)
+                        log_info "[PRE-FLIGHT] Skipped auto-fix for: $fix_name"
+                        return 1
+                        ;;
+                esac
+            fi
+            ;;
+    esac
+}
+
+# Export for use in preflight and autofix scripts
+export -f handle_autofix 2>/dev/null || true
 
 # ============================================================
 # Environment Detection (mjt.5.3)
@@ -974,6 +1267,21 @@ detect_environment() {
     if [[ -f "$ACFS_LIB_DIR/tailscale.sh" ]]; then
         # shellcheck source=scripts/lib/tailscale.sh
         source "$ACFS_LIB_DIR/tailscale.sh"
+    fi
+
+    # Source auto-fix modules (bd-19y9.3.4)
+    if [[ -f "$ACFS_LIB_DIR/autofix.sh" ]]; then
+        # shellcheck source=scripts/lib/autofix.sh
+        source "$ACFS_LIB_DIR/autofix.sh"
+        export ACFS_AUTOFIX_LOADED=1
+    fi
+    if [[ -f "$ACFS_LIB_DIR/autofix_unattended.sh" ]]; then
+        # shellcheck source=scripts/lib/autofix_unattended.sh
+        source "$ACFS_LIB_DIR/autofix_unattended.sh"
+    fi
+    if [[ -f "$ACFS_LIB_DIR/autofix_existing.sh" ]]; then
+        # shellcheck source=scripts/lib/autofix_existing.sh
+        source "$ACFS_LIB_DIR/autofix_existing.sh"
     fi
 
     # Source manifest index (data-only, safe to source)
@@ -1143,6 +1451,89 @@ print_execution_plan() {
     echo "  --skip-cloud:    $SKIP_CLOUD"
     echo ""
     echo "This is a preview. Run without --print-plan to execute."
+}
+
+# ============================================================
+# Auto-Fix Functions (bd-19y9.3.4)
+# ============================================================
+# Handles automatic fixing of pre-flight issues based on AUTO_FIX_MODE
+
+# Handle a single auto-fix item based on current mode
+# Usage: handle_autofix <fix_name> <description>
+handle_autofix() {
+    local fix_name="$1"
+    local description="$2"
+    local fix_func="autofix_${fix_name}_fix"
+
+    case "$AUTO_FIX_MODE" in
+        "no")
+            log_warn "[PRE-FLIGHT] $description"
+            log_warn "[PRE-FLIGHT] Use --auto-fix to resolve automatically"
+            ;;
+        "dry-run")
+            log_info "[DRY-RUN] Would auto-fix: $description"
+            if type "$fix_func" &>/dev/null; then
+                "$fix_func" dry-run 2>&1 | while IFS= read -r line; do
+                    log_detail "  $line"
+                done
+            fi
+            ;;
+        "yes")
+            log_info "[AUTO-FIX] Fixing: $description"
+            if type "$fix_func" &>/dev/null; then
+                "$fix_func" fix
+            fi
+            ;;
+        "prompt")
+            log_warn "[PRE-FLIGHT] $description"
+            if confirm "Would you like ACFS to fix this automatically?"; then
+                log_info "[AUTO-FIX] Fixing: $description"
+                if type "$fix_func" &>/dev/null; then
+                    "$fix_func" fix
+                fi
+            else
+                log_warn "[PRE-FLIGHT] Skipped auto-fix for: $description"
+            fi
+            ;;
+    esac
+}
+
+# Run auto-fix checks before main preflight validation
+run_autofix_checks() {
+    # Skip if auto-fix modules not loaded
+    if [[ "${ACFS_AUTOFIX_LOADED:-0}" != "1" ]]; then
+        log_debug "Auto-fix modules not loaded, skipping auto-fix checks"
+        return 0
+    fi
+
+    # Skip if auto-fix disabled
+    if [[ "$AUTO_FIX_MODE" == "no" ]]; then
+        log_debug "Auto-fix disabled via --no-auto-fix"
+        return 0
+    fi
+
+    log_info "Running auto-fix pre-flight checks..."
+
+    # Check for existing ACFS installation
+    if type autofix_existing_acfs_needs_handling &>/dev/null; then
+        if autofix_existing_acfs_needs_handling 2>/dev/null; then
+            local version
+            version=$(get_installed_version 2>/dev/null || echo "unknown")
+            handle_autofix "existing" "Existing ACFS installation detected (version: $version)"
+        fi
+    fi
+
+    # Check for unattended-upgrades issues
+    if type autofix_unattended_upgrades_needs_fix &>/dev/null; then
+        if autofix_unattended_upgrades_needs_fix 2>/dev/null; then
+            handle_autofix "unattended_upgrades" "unattended-upgrades service may cause apt lock conflicts"
+        fi
+    fi
+
+    # Add more auto-fix checks here as they are implemented
+    # e.g., nvm/pyenv conflicts from bd-19y9.3.2
+
+    log_debug "Auto-fix pre-flight checks complete"
 }
 
 # ============================================================
@@ -4131,14 +4522,14 @@ finalize() {
     try_step "Installing global acfs wrapper" install_asset "scripts/acfs-global" "/usr/local/bin/acfs" || return 1
     try_step "Setting global acfs permissions" $SUDO chmod 755 "/usr/local/bin/acfs" || return 1
 
-    # Install Claude destructive-command guard hook automatically.
+    # Install DCG (Destructive Command Guard) hook automatically.
     #
     # This is especially important because ACFS config includes "dangerous mode"
     # aliases (e.g., `cc`) that can run commands without interactive approvals.
-    log_detail "Installing Claude Git Safety Guard (PreToolUse hook)"
-    try_step_eval "Installing Claude Git Safety Guard" \
+    log_detail "Installing DCG (Destructive Command Guard) PreToolUse hook"
+    try_step_eval "Installing DCG hook" \
         "TARGET_USER='$TARGET_USER' TARGET_HOME='$TARGET_HOME' '$ACFS_HOME/scripts/services-setup.sh' --install-claude-guard --yes" || \
-        log_warn "Claude Git Safety Guard installation failed (optional)"
+        log_warn "DCG hook installation failed (optional)"
 
     # Legacy state file (only if state.sh is unavailable)
     if type -t state_load &>/dev/null; then
@@ -4546,6 +4937,13 @@ main() {
         export ACFS_INTERACTIVE=false
     fi
 
+    # Handle --pin-ref early (before any heavy setup) - just resolve SHA and exit
+    if [[ "$PIN_REF_MODE" == "true" ]]; then
+        fetch_commit_sha
+        print_pinned_ref
+        exit 0
+    fi
+
     if [[ -z "${SCRIPT_DIR:-}" ]]; then
         # Resolve ACFS_REF to a specific commit SHA early to prevent mixed-ref installs.
         # Without this, we could download a tarball for one commit and later fetch commit metadata
@@ -4658,6 +5056,11 @@ main() {
     if [[ "$DRY_RUN" == "true" ]]; then
         log_warn "Dry run mode - no changes will be made"
         echo ""
+    fi
+
+    # Run auto-fix checks before preflight (bd-19y9.3.4)
+    if [[ "$SKIP_PREFLIGHT" != "true" ]]; then
+        run_autofix_checks
     fi
 
     # Run pre-flight validation (Phase 0)
@@ -4786,13 +5189,15 @@ main() {
                     else
                         log_error "Phase $phase_display failed"
                     fi
-                    log_info "Run with --resume to continue from this point."
+                    # Print precise resume hint (bd-31ps.9.1)
+                    print_resume_hint "$phase_id" ""
                     exit 1
                 fi
             else
                 # Fallback: direct call with basic error handling
                 if ! "$phase_func"; then
                     log_error "Phase $phase_display failed"
+                    print_resume_hint "$phase_id" ""
                     exit 1
                 fi
             fi

@@ -254,8 +254,78 @@ check_disk() {
 }
 
 # ============================================================
+# CPU Check
+# ============================================================
+
+check_cpu() {
+    local cpu_count
+    if [[ -f /proc/cpuinfo ]]; then
+        cpu_count=$(grep -c '^processor' /proc/cpuinfo 2>/dev/null) || cpu_count=1
+    elif command -v nproc &>/dev/null; then
+        cpu_count=$(nproc)
+    else
+        warn "Cannot determine CPU count" "/proc/cpuinfo not available"
+        return
+    fi
+
+    if (( cpu_count >= 4 )); then
+        pass "CPU: ${cpu_count} cores"
+    elif (( cpu_count >= 2 )); then
+        warn "CPU: ${cpu_count} cores" "4+ cores recommended for running multiple agents"
+    else
+        warn "CPU: ${cpu_count} core(s)" "Low CPU count may cause issues with parallel builds"
+    fi
+}
+
+# ============================================================
 # Network Checks
 # ============================================================
+
+check_dns() {
+    # Test DNS resolution before HTTP checks
+    local test_hosts=(
+        "github.com"
+        "archive.ubuntu.com"
+        "raw.githubusercontent.com"
+    )
+
+    local dns_ok=true
+    local failed_hosts=()
+
+    for host in "${test_hosts[@]}"; do
+        # Try multiple DNS resolution methods
+        if command -v host &>/dev/null; then
+            if ! host "$host" >/dev/null 2>&1; then
+                dns_ok=false
+                failed_hosts+=("$host")
+            fi
+        elif command -v dig &>/dev/null; then
+            if ! dig +short "$host" >/dev/null 2>&1; then
+                dns_ok=false
+                failed_hosts+=("$host")
+            fi
+        elif command -v getent &>/dev/null; then
+            if ! getent hosts "$host" >/dev/null 2>&1; then
+                dns_ok=false
+                failed_hosts+=("$host")
+            fi
+        else
+            # Fallback to ping (unreliable but better than nothing)
+            if ! ping -c 1 -W 5 "$host" >/dev/null 2>&1; then
+                dns_ok=false
+                failed_hosts+=("$host")
+            fi
+        fi
+    done
+
+    if [[ "$dns_ok" == "true" ]]; then
+        pass "DNS: All hosts resolved"
+    else
+        for host in "${failed_hosts[@]}"; do
+            fail "DNS: Cannot resolve $host" "Check /etc/resolv.conf or network configuration"
+        done
+    fi
+}
 
 check_network_basic() {
     if ! command -v curl &>/dev/null; then
@@ -322,6 +392,51 @@ check_network_installers() {
 # ============================================================
 # APT Checks
 # ============================================================
+
+check_apt_mirrors() {
+    # Only relevant on Debian/Ubuntu systems
+    if ! command -v apt-get &>/dev/null; then
+        return
+    fi
+
+    if ! command -v curl &>/dev/null; then
+        return
+    fi
+
+    # Get the primary Ubuntu mirror from sources.list or DEB822 format
+    local mirror_url=""
+
+    # Traditional sources.list format
+    if [[ -f /etc/apt/sources.list ]]; then
+        mirror_url=$(grep -E '^deb\s+http' /etc/apt/sources.list 2>/dev/null | head -1 | awk '{print $2}' | sed 's|/$||' || true)
+    fi
+
+    # If no mirror found, check sources.list.d for traditional format
+    if [[ -z "$mirror_url" ]] && [[ -d /etc/apt/sources.list.d ]]; then
+        mirror_url=$(grep -rhE '^deb\s+http' /etc/apt/sources.list.d/*.list 2>/dev/null | head -1 | awk '{print $2}' | sed 's|/$||' || true)
+    fi
+
+    # DEB822 format (Ubuntu 24.04+): check *.sources files
+    if [[ -z "$mirror_url" ]] && [[ -d /etc/apt/sources.list.d ]]; then
+        # DEB822 format has "URIs:" line
+        mirror_url=$(grep -rhE '^URIs:\s*http' /etc/apt/sources.list.d/*.sources 2>/dev/null | head -1 | sed 's/^URIs:\s*//' | awk '{print $1}' | sed 's|/$||' || true)
+    fi
+
+    # Default to archive.ubuntu.com if nothing found
+    if [[ -z "$mirror_url" ]]; then
+        mirror_url="http://archive.ubuntu.com/ubuntu"
+    fi
+
+    # Test mirror reachability
+    local http_status
+    http_status=$(curl -sL --max-time 10 --connect-timeout 5 -o /dev/null -w "%{http_code}" "$mirror_url/dists/" 2>/dev/null) || http_status="000"
+
+    if [[ "$http_status" -ge 200 && "$http_status" -lt 400 ]]; then
+        pass "APT mirror reachable" "${mirror_url##http*://}"
+    else
+        warn "APT mirror slow or unreachable" "Mirror: $mirror_url; Check /etc/apt/sources.list"
+    fi
+}
 
 check_apt_lock() {
     # Only relevant on Debian/Ubuntu systems with apt
@@ -482,16 +597,19 @@ main() {
     # Run all checks
     check_os
     check_architecture
+    check_cpu
     check_memory
     check_disk
 
     [[ "$QUIET" != "true" && "$MACHINE_OUTPUT" != "true" ]] && echo ""
 
+    check_dns
     check_network_basic
     check_network_installers
 
     [[ "$QUIET" != "true" && "$MACHINE_OUTPUT" != "true" ]] && echo ""
 
+    check_apt_mirrors
     check_apt_lock
 
     [[ "$QUIET" != "true" && "$MACHINE_OUTPUT" != "true" ]] && echo ""
