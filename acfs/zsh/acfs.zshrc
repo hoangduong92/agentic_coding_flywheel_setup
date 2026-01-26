@@ -251,6 +251,17 @@ acfs() {
   shift 1 2>/dev/null || true
 
   case "$cmd" in
+    newproj|new)
+      if [[ -f "$acfs_home/scripts/lib/newproj.sh" ]]; then
+        bash "$acfs_home/scripts/lib/newproj.sh" "$@"
+      elif [[ -x "$acfs_bin" ]]; then
+        "$acfs_bin" newproj "$@"
+      else
+        echo "Error: newproj.sh not found"
+        echo "Re-run the ACFS installer to get the latest scripts"
+        return 1
+      fi
+      ;;
     services-setup|services|setup)
       if [[ -f "$acfs_home/scripts/services-setup.sh" ]]; then
         bash "$acfs_home/scripts/services-setup.sh" "$@"
@@ -352,7 +363,8 @@ acfs() {
       echo "Usage: acfs <command>"
       echo ""
       echo "Commands:"
-      echo "  newproj         Create new project with git, bd, claude settings"
+      echo "  newproj         Create new project (git, bd, AGENTS.md, Claude settings)"
+      echo "                  Use 'acfs newproj -i' for interactive TUI wizard"
       echo "  info            Quick system overview (hostname, IP, uptime, progress)"
       echo "  cheatsheet      Command reference (aliases, shortcuts)"
       echo "  dashboard, dash <generate|serve> - Static HTML dashboard"

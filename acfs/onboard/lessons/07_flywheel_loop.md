@@ -173,28 +173,31 @@ This is why it's called a **flywheel** - it gets better the more you use it.
 You're ready! Here's how to start your first project:
 
 ```bash
-# 1. Create a project directory
-mkcd /data/projects/my-first-project
+# 1. Create project with ACFS (recommended!)
+acfs newproj my-first-project --interactive
 
-# 2. Initialize git
-git init
+# This creates:
+# - /data/projects/my-first-project
+# - Git repository initialized
+# - Beads (bd) for task tracking
+# - AGENTS.md with project guidance
+# - Claude settings
 
-# 3. Initialize beads_rust for task tracking (br command, alias: bd)
-br init
-
-# (Recommended) Create a dedicated Beads sync branch
-# Beads uses git worktrees for syncing; syncing to your current branch (often `main`)
-# can cause worktree conflicts. Once you have a `main` branch and a remote, run:
-git branch beads-sync main
-git push -u origin beads-sync
-br config set sync.branch=beads-sync
-
-# 4. Spawn your agents
+# 2. Spawn your agents
 ntm spawn my-first-project --cc=2 --cod=1 --gmi=1
 
-# 5. Start building!
+# 3. Start building!
 ntm send my-first-project "Let's build something awesome.
 What kind of project should we create?"
+```
+
+**Why `acfs newproj`?** It sets up everything agents need to work effectively,
+including AGENTS.md which tells them about your project conventions.
+
+For more details, run:
+
+```bash
+onboard 20
 ```
 
 ---
