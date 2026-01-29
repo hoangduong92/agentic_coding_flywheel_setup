@@ -51,6 +51,8 @@ discover_lessons() {
     fi
 
     # Find all markdown files, sorted by name (handles NN_ prefix ordering)
+    # Using plain sort -z for portability (works on macOS/BSD)
+    # Lesson files named 00_xxx, 01_xxx sort correctly with alphanumeric sort
     while IFS= read -r -d '' file; do
         local basename
         basename=$(basename "$file")
@@ -64,7 +66,7 @@ discover_lessons() {
             title="${basename%.md}"
         fi
         LESSON_TITLES+=("$title")
-    done < <(find "$LESSONS_DIR" -maxdepth 1 -name "*.md" -print0 2>/dev/null | sort -zV)
+    done < <(find "$LESSONS_DIR" -maxdepth 1 -name "*.md" -print0 2>/dev/null | sort -z)
 }
 
 # Run discovery at startup
