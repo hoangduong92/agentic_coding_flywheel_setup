@@ -36,35 +36,39 @@ for candidate in \
     fi
 done
 
-# Lesson titles (indexed 0-10)
-declare -a LESSON_TITLES=(
-    "Welcome & Overview"
-    "Linux Navigation"
-    "SSH & Persistence"
-    "tmux Basics"
-    "Agent Commands (cc, cod, gmi)"
-    "NTM Command Center"
-    "NTM Prompt Palette"
-    "The Flywheel Loop"
-    "Keeping Updated"
-    "RU: Multi-Repo Mastery"
-    "DCG: Destructive Command Guard"
-)
+# Dynamic lesson discovery
+# Finds all *.md files in LESSONS_DIR, sorted by filename
+# Extracts titles from the first "# Title" line in each file
+declare -a LESSON_TITLES=()
+declare -a LESSON_FILES=()
 
-# Lesson files (indexed 0-10)
-declare -a LESSON_FILES=(
-    "00_welcome.md"
-    "01_linux_basics.md"
-    "02_ssh_basics.md"
-    "03_tmux_basics.md"
-    "04_agents_login.md"
-    "05_ntm_core.md"
-    "06_ntm_command_palette.md"
-    "07_flywheel_loop.md"
-    "08_keeping_updated.md"
-    "09_ru.md"
-    "10_dcg.md"
-)
+discover_lessons() {
+    LESSON_TITLES=()
+    LESSON_FILES=()
+
+    if [[ ! -d "$LESSONS_DIR" ]]; then
+        return
+    fi
+
+    # Find all markdown files, sorted by name (handles NN_ prefix ordering)
+    while IFS= read -r -d '' file; do
+        local basename
+        basename=$(basename "$file")
+        LESSON_FILES+=("$basename")
+
+        # Extract title from first "# " line
+        local title
+        title=$(grep -m1 "^# " "$file" 2>/dev/null | sed 's/^# //' || echo "$basename")
+        # Fallback to filename if no title found
+        if [[ -z "$title" ]]; then
+            title="${basename%.md}"
+        fi
+        LESSON_TITLES+=("$title")
+    done < <(find "$LESSONS_DIR" -maxdepth 1 -name "*.md" -print0 2>/dev/null | sort -zV)
+}
+
+# Run discovery at startup
+discover_lessons
 
 # Lesson summaries - key learning points for celebration screen (pipe-separated)
 declare -gA LESSON_SUMMARIES=(
@@ -1083,7 +1087,7 @@ show_lesson() {
             --border-foreground "$ACFS_PRIMARY" \
             --padding "1 2" \
             --margin "0 0 1 0" \
-            "$(gum style --foreground "$ACFS_ACCENT" "Lesson $((idx + 1)) of 11")
+            "$(gum style --foreground "$ACFS_ACCENT" "Lesson $((idx + 1)) of $NUM_LESSONS")
 $dots
 $(gum style --foreground "$ACFS_PINK" --bold "${LESSON_TITLES[$idx]}")"
     else
