@@ -3751,13 +3751,21 @@ install_languages_legacy_tools() {
         try_step "Installing Atuin" acfs_run_verified_upstream_script_as_target "atuin" "sh" || return 1
     fi
 
-    # Zoxide (install as target user)
+    # Zoxide - prefer apt to avoid GitHub API rate limits in CI
     # Check multiple possible locations
     if [[ -x "$TARGET_HOME/.local/bin/zoxide" ]] || [[ -x "/usr/local/bin/zoxide" ]] || command -v zoxide &>/dev/null; then
         log_detail "Zoxide already installed"
     else
         log_detail "Installing Zoxide for $TARGET_USER"
-        try_step "Installing Zoxide" acfs_run_verified_upstream_script_as_target "zoxide" "sh" || return 1
+        # Prefer apt (avoids GitHub API rate limits), fall back to upstream script
+        if apt-cache show zoxide &>/dev/null; then
+            try_step "Installing Zoxide (apt)" $SUDO apt-get install -y zoxide || {
+                log_detail "apt install failed, falling back to upstream script"
+                try_step "Installing Zoxide (upstream)" acfs_run_verified_upstream_script_as_target "zoxide" "sh" || return 1
+            }
+        else
+            try_step "Installing Zoxide" acfs_run_verified_upstream_script_as_target "zoxide" "sh" || return 1
+        fi
     fi
 }
 
