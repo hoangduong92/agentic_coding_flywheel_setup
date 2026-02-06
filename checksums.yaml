@@ -1,4 +1,4 @@
-# checksums.yaml - Auto-generated 2026-02-06T00:17:57+00:00
+# checksums.yaml - Auto-generated 2026-02-06T02:58:21+00:00
 # Run: ./scripts/lib/security.sh --update-checksums
 
 installers:
@@ -28,7 +28,7 @@ installers:
 
   mcp_agent_mail:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail/main/scripts/install.sh"
-    sha256: "42aa81a68021413f69cf9d88d98b900c77aea0f2b910d41618febf6238215a20"
+    sha256: "b3b6c52ba7b63516ab4dcdbe386d8f8fc8c429c8ee6037718c3dc194b3bf74f4"
 
   dcg:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/main/install.sh"
@@ -68,7 +68,7 @@ installers:
 
   tru:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/toon_rust/master/install.sh"
-    sha256: "19b9e7d1de4509e54c4ba1646fc0d18c5e39e6b2e1c8b6775dbdda6d268dc316"
+    sha256: "4996301850402a0e18eb4f0f501e42c32b4871cb7f745e53aaec356180ac4989"
 
   ntm:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh"
@@ -84,7 +84,7 @@ installers:
 
   rch:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/remote_compilation_helper/master/install.sh"
-    sha256: "85df586c025260ad3a75a11f44a40314c30f3f6aaeed728d7d76927bb9d1fce4"
+    sha256: "64dd8e9173bfae21903c75ac9d8d7ff2aaea8a1680a8d5a514d603b517f6ae06"
 
   caam:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_account_manager/main/install.sh"
