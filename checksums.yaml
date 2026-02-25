@@ -1,4 +1,4 @@
-# checksums.yaml - Auto-generated 2026-02-25T20:10:44+00:00
+# checksums.yaml - Auto-generated 2026-02-25T22:07:17+00:00
 # Run: ./scripts/lib/security.sh --update-checksums
 
 installers:
@@ -32,7 +32,7 @@ installers:
 
   dcg:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/main/install.sh"
-    sha256: "e4ee5aaf2fea324c98290073da70d5c5cd8a9936d85ca76a7f6adc6ecc5213a0"
+    sha256: "9a619e9c138856e6dfd0e6a5b7058b757fc1bf431243e204ba6107a5d956c595"
 
   claude:
     url: "https://claude.ai/install.sh"
@@ -56,7 +56,7 @@ installers:
 
   mdwb:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/markdown_web_browser/main/install.sh"
-    sha256: "a97793503c0affae12a7ee76d7ac292fd474f6b7ff0d8bb4fe50dc5363a985dc"
+    sha256: "72134e3c004ea8680962acf82663cc971c5943d4bd1c5b8717386f7e4e199734"
 
   uv:
     url: "https://astral.sh/uv/install.sh"
