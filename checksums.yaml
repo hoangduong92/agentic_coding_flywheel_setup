@@ -1,4 +1,4 @@
-# checksums.yaml - Auto-generated 2026-03-06T08:09:03+00:00
+# checksums.yaml - Auto-generated 2026-03-06T16:10:34+00:00
 # Run: ./scripts/lib/security.sh --update-checksums
 
 installers:
@@ -92,7 +92,7 @@ installers:
 
   ubs:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_scanner/master/install.sh"
-    sha256: "0210181a9eb438625e3d069ec588aeb2d624cc994c974a37752497a3bcd6cab5"
+    sha256: "0e01428ca65ea252cc3aa5a9bed52f08d74317e13f2045de9ce8a7dbe52032de"
 
   slb:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/simultaneous_launch_button/main/scripts/install.sh"
@@ -124,7 +124,7 @@ installers:
 
   br:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh"
-    sha256: "3daa013c4d6748cf30ce4b9124c90a7dffcd705763ca3759ac0f8d78c4af189a"
+    sha256: "6dc29adab5a789a08da735c19826fc5049a08aa0925addc5d40fc2abf85acb58"
 
   brenner_bot:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/brenner_bot/main/install.sh"
