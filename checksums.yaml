@@ -1,4 +1,4 @@
-# checksums.yaml - Auto-generated 2026-03-26T22:05:49+00:00
+# checksums.yaml - Auto-generated 2026-03-27T00:23:04+00:00
 # Run: ./scripts/lib/security.sh --update-checksums
 
 installers:
@@ -64,7 +64,7 @@ installers:
 
   pt:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/process_triage/master/install.sh"
-    sha256: "f42461ddeb861957a9d610284d6bd3d80bc261eabb8cfce6deca40d5176233d6"
+    sha256: "5642c40e66591886985b4e669ca2aaf82deeb72b76fd7b188a2222f1f1721606"
 
   tru:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/toon_rust/master/install.sh"
@@ -84,7 +84,7 @@ installers:
 
   rch:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/remote_compilation_helper/master/install.sh"
-    sha256: "6bf096bb0b7ab6c63e5d0064765163f817fc1029b038dee4c4d6877ff2168c5a"
+    sha256: "3acef1f6576d067d931a42a6e8c2b76a4f94a2ba3d2e1c1ab44d8f81806ddee2"
 
   caam:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_account_manager/main/install.sh"
