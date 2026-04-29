@@ -1,4 +1,4 @@
-# checksums.yaml - Auto-generated 2026-04-29T03:05:23+00:00
+# checksums.yaml - Auto-generated 2026-04-29T10:36:42+00:00
 # Run: ./scripts/lib/security.sh --update-checksums
 
 installers:
@@ -12,7 +12,7 @@ installers:
 
   srps:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/system_resource_protection_script/main/install.sh"
-    sha256: "82b97151d9aa7254ddf3515f11b9f5c8918028fff0ee53c27a15e840e9fac68f"
+    sha256: "d3e0448de62d51441aac6b2548ba419a83656d460ebfe673a10efd4e22a520a6"
 
   giil:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/giil/main/install.sh"
@@ -76,7 +76,7 @@ installers:
 
   ms:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/meta_skill/main/scripts/install.sh"
-    sha256: "12832a89cb5ba9102bd60672e09ac8e3c40c54b154723f1f8e4832aeafbcb7d0"
+    sha256: "85db800d67e54d8ad844b957531b4793211f78d3b34f83cb98c5b6df2f87e7e6"
 
   cm:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh"
@@ -124,7 +124,7 @@ installers:
 
   br:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh"
-    sha256: "b584ccb6a4c632e208db40aaf3246f5e8926493ea5f0a8a99822f2cf7d08243f"
+    sha256: "d2d38c36854b3d1fe3d5390dbca696727c1765351bfd49f3566c7215f41ad7c2"
 
   brenner_bot:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/brenner_bot/main/install.sh"
