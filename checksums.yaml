@@ -1,4 +1,4 @@
-# checksums.yaml - Auto-generated 2026-04-29T12:32:31+00:00
+# checksums.yaml - Auto-generated 2026-04-29T16:33:34+00:00
 # Run: ./scripts/lib/security.sh --update-checksums
 
 installers:
@@ -12,7 +12,7 @@ installers:
 
   srps:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/system_resource_protection_script/main/install.sh"
-    sha256: "d3e0448de62d51441aac6b2548ba419a83656d460ebfe673a10efd4e22a520a6"
+    sha256: "8bb359faebe8c1234b117de76bda480589d9d59676bd61975ebc314436743169"
 
   giil:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/giil/main/install.sh"
