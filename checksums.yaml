@@ -1,4 +1,4 @@
-# checksums.yaml - Auto-generated 2026-04-29T10:36:42+00:00
+# checksums.yaml - Auto-generated 2026-04-29T12:32:31+00:00
 # Run: ./scripts/lib/security.sh --update-checksums
 
 installers:
@@ -56,7 +56,7 @@ installers:
 
   mdwb:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/markdown_web_browser/main/install.sh"
-    sha256: "c48fceddda8054ffceb94161990c3ff594f51047d4bc23a8ddb2597007c01ace"
+    sha256: "2b54a790738ad121f47f346bdd975ea851549d684588a4bd51fa068f55eed350"
 
   uv:
     url: "https://astral.sh/uv/install.sh"
@@ -68,7 +68,7 @@ installers:
 
   tru:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/toon_rust/master/install.sh"
-    sha256: "19b9e7d1de4509e54c4ba1646fc0d18c5e39e6b2e1c8b6775dbdda6d268dc316"
+    sha256: "8cf88d66be8be01228dde13aae85a639156df66e477543571743a015f1253609"
 
   ntm:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh"
