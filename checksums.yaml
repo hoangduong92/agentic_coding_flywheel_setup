@@ -1,4 +1,4 @@
-# checksums.yaml - Auto-generated 2026-09-27T22:44:55+00:00
+# checksums.yaml - Auto-generated 2026-09-29T00:07:11+00:00
 # Run: ./scripts/lib/security.sh --update-checksums
 
 installers:
@@ -60,7 +60,7 @@ installers:
 
   uv:
     url: "https://astral.sh/uv/install.sh"
-    sha256: "61b349611f1b6e1ba33645f30c36da5287df2609dd7af8605d96a031435eb35b"
+    sha256: "9d229407e2263bde4dcab27eca4aa0886fda54dbcd3da81c8e54d17bbe3fd7bc"
 
   pt:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/process_triage/master/install.sh"
@@ -80,7 +80,7 @@ installers:
 
   cm:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh"
-    sha256: "1e42029111a5a1c5c4e218f1aeebc6787d8ce938a6dc3d48730e2f556abbb0c3"
+    sha256: "f7ca58ac28b8faebeb079d0bf3f4187c104d9f3f869bbb0128476ac53e3bda49"
 
   rch:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/remote_compilation_helper/master/install.sh"
