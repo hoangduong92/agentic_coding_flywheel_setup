@@ -1,4 +1,4 @@
-# checksums.yaml - Auto-generated 2026-10-13T08:50:29+00:00
+# checksums.yaml - Auto-generated 2026-10-13T22:11:43+00:00
 # Run: ./scripts/lib/security.sh --update-checksums
 
 installers:
@@ -12,7 +12,7 @@ installers:
 
   srps:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/system_resource_protection_script/main/install.sh"
-    sha256: "a37fb479e261c22cff90fb9fcaab47366961c37474f546da79d232e90ac82d67"
+    sha256: "3fb59f3103136bba4c18f05c3fe2aab70ece2c082ec499e0b8ac6ec6fcb30c1c"
 
   giil:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/giil/main/install.sh"
@@ -100,7 +100,7 @@ installers:
 
   ru:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/repo_updater/main/install.sh"
-    sha256: "4af6f6fc31979c775553fdb50da73f34395762eca8c769dea9ab6de77535dc94"
+    sha256: "77d3743db7683e7de8ca3190f19728ed34c543e66cc570fa289cc173e4e4e7cb"
 
   nvm:
     url: "https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh"
